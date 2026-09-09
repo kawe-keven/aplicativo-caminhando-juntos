@@ -11,7 +11,7 @@ class RewardsStoreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final progress = ref.watch(dashboardProvider);
+    final dashboardState = ref.watch(dashboardProvider);
     final filter = ref.watch(storeFilterProvider);
     final rewards = ref.watch(filteredRewardsProvider);
 
@@ -20,13 +20,13 @@ class RewardsStoreScreen extends ConsumerWidget {
       child: Column(
         children: [
           // Cabeçalho Customizado
-          _buildHeader(context, progress),
+          _buildHeader(context, dashboardState.progress),
           
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                _BalanceCard(coins: progress.coins),
+                _BalanceCard(coins: dashboardState.progress.coins),
                 const SizedBox(height: 24),
                 _FilterSection(filter: filter, ref: ref),
                 const SizedBox(height: 24),
@@ -44,7 +44,8 @@ class RewardsStoreScreen extends ConsumerWidget {
                     final reward = rewards[index];
                     return RewardCardWidget(
                       reward: reward,
-                      onRedeem: () => _showRedeemDialog(context, ref, reward, progress.coins),
+                      // Passa o estado de carregamento para o botão no futuro se necessário
+                      onRedeem: () => _showRedeemDialog(context, ref, reward, dashboardState),
                     );
                   },
                 ),
@@ -89,8 +90,8 @@ class RewardsStoreScreen extends ConsumerWidget {
     );
   }
 
-  void _showRedeemDialog(BuildContext context, WidgetRef ref, Reward reward, int userCoins) {
-    if (userCoins < reward.cost) {
+  void _showRedeemDialog(BuildContext context, WidgetRef ref, Reward reward, DashboardState dashboardState) {
+    if (dashboardState.progress.coins < reward.cost) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Saldo insuficiente para resgatar este prêmio.")),
       );
@@ -106,14 +107,18 @@ class RewardsStoreScreen extends ConsumerWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
           ElevatedButton(
-            onPressed: () {
-              final success = ref.read(dashboardProvider.notifier).redeemReward(reward.cost);
-              Navigator.pop(context);
-              if (success) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Prêmio resgatado! Código: CXJ-${reward.id}88")));
-              }
-            },
-            child: const Text("Resgatar"),
+            onPressed: dashboardState.isRedeeming 
+              ? null 
+              : () async {
+                  final success = await ref.read(dashboardProvider.notifier).redeemReward(reward.cost);
+                  if (context.mounted) Navigator.pop(context);
+                  if (success && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Prêmio resgatado! Código: CXJ-${reward.id}88")));
+                  }
+                },
+            child: dashboardState.isRedeeming 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text("Resgatar"),
           ),
         ],
       ),

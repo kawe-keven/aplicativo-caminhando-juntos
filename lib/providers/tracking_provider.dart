@@ -32,31 +32,20 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
     }
 
     if (permission == LocationPermission.deniedForever) {
-      return Future.error('Location permissions are permanently denied, we cannot request permissions.');
+      return Future.error('Location permissions are permanently denied.');
     }
 
     state = state.copyWith(status: TrackingStatus.tracking);
-
     _startTimer();
 
     _positionSubscription = Geolocator.getPositionStream(
-      locationSettings: AndroidSettings(
-        accuracy: LocationAccuracy.medium,
-        distanceFilter: 10,
-        intervalDuration: const Duration(seconds: 5),
-        foregroundNotificationConfig: const ForegroundNotificationConfig(
-          notificationText: "Rastreando sua caminhada para o CaminhaJuntos",
-          notificationTitle: "Caminhada Ativa",
-          enableWakeLock: true,
-        ),
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
       ),
     ).listen(
       (Position position) {
         _updatePosition(position);
-      },
-      onError: (error) {
-        // Handle stream errors (e.g. GPS signal lost)
-        state = state.copyWith(status: TrackingStatus.paused);
       },
     );
   }
@@ -71,25 +60,22 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
     if (state.path.isNotEmpty) {
       final lastPoint = state.path.last;
       addedDistance = Geolocator.distanceBetween(
-        lastPoint.latitude,
-        lastPoint.longitude,
-        newPoint.latitude,
-        newPoint.longitude,
-      ) / 1000; // Convert to km
+        lastPoint.latitude, lastPoint.longitude,
+        newPoint.latitude, newPoint.longitude,
+      ) / 1000;
     }
 
     final double newDistance = state.distanceKm + addedDistance;
     
-    // Mocking steps and coins for simplicity
-    final int newSteps = (newDistance * 1500).toInt(); // ~1500 steps per km
-    final int newCoins = (newDistance * 10).toInt(); // 1 coin every 100m = 10 coins per km
-
+    // REQUISITO DE SEGURANÇA (Escopo 2): 
+    // O App Flutter calcula apenas a distância estimada para feedback visual.
+    // O valor FINAL das moedas será calculado pelo Backend Java ao receber os dados brutos.
     state = state.copyWith(
       currentPosition: newPoint,
       path: newPath,
       distanceKm: newDistance,
-      steps: newSteps,
-      coinsEarned: newCoins,
+      // Moedas mostradas em tempo real são APENAS UMA ESTIMATIVA.
+      coinsEarned: (newDistance * 10).toInt(), 
     );
   }
 
@@ -102,19 +88,19 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
     });
   }
 
-  void pauseTracking() {
-    state = state.copyWith(status: TrackingStatus.paused);
-  }
-
-  void resumeTracking() {
-    state = state.copyWith(status: TrackingStatus.tracking);
-  }
-
   void finishTracking() {
     state = state.copyWith(status: TrackingStatus.finished);
     _positionSubscription?.cancel();
     _timer?.cancel();
+
+    // AÇÃO NECESSÁRIA NO BACKEND:
+    // Chamar endpoint POST /activity/sync enviando {distanceKm, durationSeconds, steps}.
+    // O Java validará se a distância é compatível com o tempo (prevenindo spoofing de GPS) 
+    // e retornará o saldo REAL de moedas.
   }
+
+  void pauseTracking() => state = state.copyWith(status: TrackingStatus.paused);
+  void resumeTracking() => state = state.copyWith(status: TrackingStatus.tracking);
 
   void reset() {
     _positionSubscription?.cancel();

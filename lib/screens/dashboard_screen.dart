@@ -16,7 +16,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final progress = ref.watch(dashboardProvider);
+    final dashboardState = ref.watch(dashboardProvider);
     final user = ref.watch(userProvider);
     final weather = ref.watch(weatherProvider);
 
@@ -25,7 +25,7 @@ class DashboardScreen extends ConsumerWidget {
       child: Column(
         children: [
           // Cabeçalho Customizado (Substitui o AppBar)
-          _buildHeader(context, user, progress),
+          _buildHeader(context, user, dashboardState.progress),
           
           Expanded(
             child: ListView(
@@ -52,9 +52,9 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-                _BalanceCard(coins: progress.coins),
+                _BalanceCard(coins: dashboardState.progress.coins),
                 const SizedBox(height: 24),
-                _ProgressCard(progress: progress),
+                _ProgressCard(progress: dashboardState.progress),
                 const SizedBox(height: 24),
                 const _StartWalkingButton(),
                 const SizedBox(height: 24),
