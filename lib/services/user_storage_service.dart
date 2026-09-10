@@ -1,23 +1,27 @@
 import 'package:caminhandojuntos/models/user_model.dart';
+import 'package:caminhandojuntos/services/secure_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Serviço de persistência local para os dados do usuário.
-/// Escolhemos shared_preferences por ser ideal para dados simples de perfil
-/// e configurações, oferecendo leitura/escrita rápida com baixo overhead.
+/// Refatorado para seguir critérios de segurança: dados sensíveis vão para SecureStorage.
 class UserStorageService {
-  static const String _userKey = 'user_data';
+  final SecureStorageService _secureStorage = SecureStorageService();
+  static const String _userProfileKey = 'secure_user_profile';
+  static const String _appSettingsKey = 'app_onboarding_done';
 
-  /// Salva ou atualiza os dados do usuário localmente.
-  /// // TODO: sincronizar com API quando houver backend
+  /// Salva os dados do usuário de forma criptografada.
   Future<void> saveUser(UserModel user) async {
+    // Dados Sensíveis -> Secure Storage
+    await _secureStorage.write(_userProfileKey, user.toJson());
+    
+    // Metadados não sensíveis -> SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userKey, user.toJson());
+    await prefs.setBool(_appSettingsKey, user.isRegistered);
   }
 
-  /// Recupera o usuário salvo. Retorna null se não houver cadastro.
+  /// Recupera o usuário salvo do armazenamento criptografado.
   Future<UserModel?> getUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString(_userKey);
+    final userJson = await _secureStorage.read(_userProfileKey);
     if (userJson != null) {
       try {
         return UserModel.fromJson(userJson);
@@ -28,15 +32,21 @@ class UserStorageService {
     return null;
   }
 
-  /// Verifica de forma rápida se já existe um usuário cadastrado.
+  /// Verifica se o cadastro existe (checa preferência não sensível primeiro por performance).
   Future<bool> hasUser() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey(_userKey);
+    final onboardingDone = prefs.getBool(_appSettingsKey) ?? false;
+    if (!onboardingDone) return false;
+    
+    // Confirma se o dado real existe no storage seguro
+    final userJson = await _secureStorage.read(_userProfileKey);
+    return userJson != null;
   }
 
   /// Limpa os dados do usuário (Logout/Reset).
   Future<void> clearUser() async {
+    await _secureStorage.delete(_userProfileKey);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey);
+    await prefs.remove(_appSettingsKey);
   }
 }

@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'package:caminhandojuntos/models/coordinate_model.dart';
 import 'package:caminhandojuntos/models/tracking_state.dart';
-import 'package:caminhandojuntos/services/base_api_service.dart';
-import 'package:flutter/foundation.dart';
+import 'package:caminhandojuntos/services/logger_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -45,14 +44,14 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
   void _handleNewPosition(Position position) {
     // REGRA FLUTTER: Filtro de GPS Drift (ignorar precisão > 20 metros)
     if (position.accuracy > 20) {
-      debugPrint('GPS Drift detectado: precisão de ${position.accuracy}m. Ponto ignorado.');
+      AppLogger.d('GPS Drift detectado: precisão de ${position.accuracy}m. Ponto ignorado.');
       return;
     }
 
     final newCoordinate = CoordinateModel(
       latitude: position.latitude,
       longitude: position.longitude,
-      timestamp: position.timestamp ?? DateTime.now(),
+      timestamp: position.timestamp,
       accuracy: position.accuracy,
     );
 
@@ -83,14 +82,11 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
     _timer?.cancel();
 
     try {
-      // Payload para o Backend Java
       final payload = {
         'coordinates': state.rawPath.map((c) => c.toJson()).toList(),
         'totalDurationSeconds': state.duration.inSeconds,
       };
 
-      // Simulação de chamada via BaseApiService (definido na auditoria anterior)
-      // TODO: Implementar endpoint real /api/caminhada/sync no Java
       final response = await _mockSyncApi(payload);
 
       state = state.copyWith(
@@ -99,17 +95,16 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
         validatedCoins: response['coins'],
       );
     } catch (e) {
-      debugPrint('Erro ao sincronizar com backend: $e');
+      AppLogger.e('Erro ao sincronizar com backend', e);
       state = state.copyWith(status: TrackingStatus.paused);
     }
   }
 
-  // Simulação local enquanto o backend Java não sobe
   Future<Map<String, dynamic>> _mockSyncApi(Map<String, dynamic> data) async {
     await Future.delayed(const Duration(seconds: 2));
     return {
-      'distanceKm': 1.5, // Exemplo de valor validado pelo servidor
-      'coins': 15,       // Exemplo de moedas calculadas pelo servidor
+      'distanceKm': 1.5,
+      'coins': 15,
     };
   }
 

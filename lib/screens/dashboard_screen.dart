@@ -7,6 +7,7 @@ import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/dashboard_stats_grid.dart';
 import 'package:caminhandojuntos/widgets/step_progress_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
@@ -31,7 +32,7 @@ class DashboardScreen extends ConsumerWidget {
             
             Expanded(
               child: ListView(
-                cacheExtent: 500.0,
+                scrollCacheExtent: const ScrollCacheExtent.pixels(500.0),
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 children: [
                   Text(

@@ -294,7 +294,8 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
             onPressed: () async {
               Navigator.pop(context);
               await notifier.finishAndSync();
-              if (mounted) context.go('/summary');
+              if (!context.mounted) return;
+              context.go('/summary');
             },
             child: const Text("Sim, Sincronizar"),
           ),

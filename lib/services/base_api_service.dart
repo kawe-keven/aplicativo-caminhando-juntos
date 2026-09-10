@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:caminhandojuntos/config/api_config.dart';
-import 'package:flutter/foundation.dart';
+import 'package:caminhandojuntos/services/logger_service.dart';
 import 'package:http/http.dart' as http;
 
 /// Serviço base para comunicação segura com o Backend Java.
@@ -24,7 +24,7 @@ abstract class BaseApiService {
     ).timeout(ApiConfig.timeout));
   }
 
-  /// Processa a resposta e esconde stack traces do Java.
+  /// Processa a resposta e esconde stack traces do Java em produção.
   dynamic _processResponse(http.Response response) {
     switch (response.statusCode) {
       case 200:
@@ -37,12 +37,9 @@ abstract class BaseApiService {
         throw Exception('Sessão expirada. Por favor, entre novamente.');
       case 500:
       default:
-        // Registra o erro real apenas no console de debug (logs não capturados em prod)
-        debugPrint('API Error [${response.statusCode}]: ${response.body}');
-        // Mensagem genérica para o usuário
+        // SEGURANÇA: Logs técnicos apenas em modo debug.
+        AppLogger.e('API Error [${response.statusCode}]: ${response.body}');
         throw Exception('Servidor temporariamente indisponível. Tente mais tarde.');
     }
   }
-
-  /// TODO: Adicionar Interceptor para injetar o Token JWT automaticamente no header Authorization.
 }
