@@ -26,56 +26,28 @@ class WelcomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Column(
             children: [
-              // Header & Logo
+              // Header & Logo Otimizado
               Column(
                 children: [
-                  Stack(
-                    children: [
-                      Container(
-                        width: 96,
-                        height: 96,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.primaryContainer,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                        child: const Icon(
-                          Icons.directions_walk,
-                          size: 54,
-                          color: AppTheme.onPrimary,
-                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        "assets/images/logo.png",
+                        fit: BoxFit.cover,
                       ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: const BoxDecoration(
-                            color: AppTheme.tertiaryContainer,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 2,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.favorite,
-                            size: 22,
-                            color: AppTheme.onTertiary,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(

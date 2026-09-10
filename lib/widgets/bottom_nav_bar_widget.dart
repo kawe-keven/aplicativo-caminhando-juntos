@@ -26,31 +26,38 @@ class BottomNavBarWidget extends StatelessWidget {
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _NavBarItem(
-            icon: Icons.directions_walk,
-            label: "Início",
-            isSelected: currentIndex == 0,
-            onTap: () => onTap(0),
+          Expanded(
+            child: _NavBarItem(
+              icon: Icons.directions_walk,
+              label: "Início",
+              isSelected: currentIndex == 0,
+              onTap: () => onTap(0),
+            ),
           ),
-          _NavBarItem(
-            icon: Icons.card_giftcard,
-            label: "Prêmios",
-            isSelected: currentIndex == 1,
-            onTap: () => onTap(1),
+          Expanded(
+            child: _NavBarItem(
+              icon: Icons.card_giftcard,
+              label: "Prêmios",
+              isSelected: currentIndex == 1,
+              onTap: () => onTap(1),
+            ),
           ),
-          _NavBarItem(
-            icon: Icons.military_tech,
-            label: "Conquistas",
-            isSelected: currentIndex == 2,
-            onTap: () => onTap(2),
+          Expanded(
+            child: _NavBarItem(
+              icon: Icons.military_tech,
+              label: "Conquistas",
+              isSelected: currentIndex == 2,
+              onTap: () => onTap(2),
+            ),
           ),
-          _NavBarItem(
-            icon: Icons.account_circle,
-            label: "Perfil",
-            isSelected: currentIndex == 3,
-            onTap: () => onTap(3),
+          Expanded(
+            child: _NavBarItem(
+              icon: Icons.account_circle,
+              label: "Perfil",
+              isSelected: currentIndex == 3,
+              onTap: () => onTap(3),
+            ),
           ),
         ],
       ),
@@ -77,7 +84,7 @@ class _NavBarItem extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         decoration: isSelected
             ? BoxDecoration(
                 color: AppTheme.primaryContainer,
@@ -89,14 +96,17 @@ class _NavBarItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 32,
+              size: 28,
               color: isSelected ? Colors.white : AppTheme.onSurfaceVariant,
             ),
             const SizedBox(height: 4),
             Text(
               label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? Colors.white : AppTheme.onSurfaceVariant,
               ),

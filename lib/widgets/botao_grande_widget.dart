@@ -23,11 +23,14 @@ class BotaoGrandeWidget extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            text.toUpperCase(),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
+          Flexible(
+            child: Text(
+              text.toUpperCase(),
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
             ),
           ),
           if (icon != null) ...[

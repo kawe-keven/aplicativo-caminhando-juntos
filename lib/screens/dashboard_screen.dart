@@ -2,11 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/providers/user_provider.dart';
 import 'package:caminhandojuntos/providers/weather_provider.dart';
+import 'package:caminhandojuntos/models/user_progress.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/dashboard_stats_grid.dart';
 import 'package:caminhandojuntos/widgets/step_progress_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
@@ -16,88 +16,99 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dashboardState = ref.watch(dashboardProvider);
+    final DashboardState dashboardState = ref.watch(dashboardProvider);
     final user = ref.watch(userProvider);
     final weather = ref.watch(weatherProvider);
 
     return Material(
       color: AppTheme.backgroundColor,
-      child: Column(
-        children: [
-          // Cabeçalho Customizado (Substitui o AppBar)
-          _buildHeader(context, user, dashboardState.progress),
-          
-          Expanded(
-            child: ListView(
-              scrollCacheExtent: const ScrollCacheExtent.pixels(500.0),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              children: [
-                Text(
-                  "Bom dia, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! ☀️",
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: AppTheme.primaryColor),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.sunny, color: AppTheme.secondaryColor, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "${weather.formattedDate} • ${weather.temperature} - ${weather.isLoading ? 'Buscando clima...' : 'Ótimo para caminhar'}",
-                        style: const TextStyle(fontSize: 16, color: AppTheme.onSurfaceVariant),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Cabeçalho Customizado
+            _buildHeader(context, dashboardState.progress),
+            
+            Expanded(
+              child: ListView(
+                cacheExtent: 500.0,
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                children: [
+                  Text(
+                    "Bom dia, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! ☀️",
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: AppTheme.primaryColor),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.sunny, color: AppTheme.secondaryColor, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "${weather.formattedDate} • ${weather.temperature} - ${weather.isLoading ? 'Buscando clima...' : 'Ótimo para caminhar'}",
+                          style: const TextStyle(fontSize: 16, color: AppTheme.onSurfaceVariant),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _BalanceCard(coins: dashboardState.progress.coins),
-                const SizedBox(height: 24),
-                _ProgressCard(progress: dashboardState.progress),
-                const SizedBox(height: 24),
-                const _StartWalkingButton(),
-                const SizedBox(height: 24),
-                const _GroupWalkingCard(),
-                const SizedBox(height: 24),
-                const _HealthTipCard(),
-                const SizedBox(height: 24),
-                const _EmergencyCard(),
-                const SizedBox(height: 40),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _BalanceCard(coins: dashboardState.progress.coins),
+                  const SizedBox(height: 24),
+                  _ProgressCard(progress: dashboardState.progress),
+                  const SizedBox(height: 24),
+                  const _StartWalkingButton(),
+                  const SizedBox(height: 24),
+                  const _GroupWalkingCard(),
+                  const SizedBox(height: 24),
+                  const _HealthTipCard(),
+                  const SizedBox(height: 24),
+                  const _EmergencyCard(),
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, dynamic user, dynamic progress) {
+  Widget _buildHeader(BuildContext context, UserProgress progress) {
     return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 8, left: 16, right: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       color: Colors.white,
       child: Row(
         children: [
           ClipOval(
-            child: CachedNetworkImage(
-              imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDnXnYSEf5vNKkrXOSiWGFcLPevMAdoJt4TIquf4wk9Ax2icbSY8L8e7D91piDk1gjEOJEwrxT5iaeHtnc-YCGJ5-o2rZzkPNBvnadpgfANzn5cq5zVlXs-T5D_xZecBf9LOlNO727m3Om1ft-FglbbYSFOcszqpkub8ay7V-fN4k-WYrgCxZP9GTS_60gmr32Ut5HJN-d_LI1LPUKCGYd-HQwYSR4zhtx1VBDvkqpOBx25sNYHDFrK",
+            child: Image.asset(
+              "assets/images/logo.png",
               width: 32,
               height: 32,
-              memCacheWidth: 64,
-              placeholder: (context, url) => Container(color: Colors.grey[200]),
-              errorWidget: (context, url, error) => const Icon(Icons.directions_walk, color: AppTheme.primaryColor),
+              fit: BoxFit.cover,
             ),
           ),
           const SizedBox(width: 8),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("CaminhaJuntos", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-              Text("Início", style: TextStyle(fontSize: 12, color: AppTheme.onSurfaceVariant)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "CaminhaJuntos",
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Text(
+                  "Início",
+                  style: TextStyle(fontSize: 12, color: AppTheme.onSurfaceVariant),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(color: const Color(0xFFFFDCC3), borderRadius: BorderRadius.circular(20)),
@@ -105,7 +116,10 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 const Icon(Icons.monetization_on, color: AppTheme.tertiaryColor, size: 20),
                 const SizedBox(width: 4),
-                Text(progress.coins.toString(), style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.tertiaryColor, fontSize: 16)),
+                Text(
+                  progress.coins.toString(),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.tertiaryColor, fontSize: 16),
+                ),
               ],
             ),
           ),
@@ -118,7 +132,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           GestureDetector(
-            onTap: () => context.push('/profile'),
+            onTap: () => context.go('/profile'),
             child: Padding(
               padding: const EdgeInsets.only(right: 8),
               child: ClipOval(
@@ -156,24 +170,29 @@ class _BalanceCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: const BoxDecoration(color: Color(0xFFFFDCC3), shape: BoxShape.circle),
-                child: const Icon(Icons.monetization_on, color: AppTheme.tertiaryColor, size: 30),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Saldo Acumulado", style: TextStyle(fontSize: 16)),
-                  Text("$coins Moedas", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.tertiaryColor)),
-                ],
-              ),
-            ],
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(color: Color(0xFFFFDCC3), shape: BoxShape.circle),
+                  child: const Icon(Icons.monetization_on, color: AppTheme.tertiaryColor, size: 30),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Saldo Acumulado", style: TextStyle(fontSize: 16), overflow: TextOverflow.ellipsis),
+                      Text("$coins Moedas", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.tertiaryColor), overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
           ElevatedButton(
             onPressed: () => context.push('/store'),
             style: ElevatedButton.styleFrom(
@@ -191,7 +210,7 @@ class _BalanceCard extends StatelessWidget {
 }
 
 class _ProgressCard extends StatelessWidget {
-  final dynamic progress;
+  final UserProgress progress;
   const _ProgressCard({required this.progress});
 
   @override
@@ -247,23 +266,46 @@ class _ProgressCard extends StatelessWidget {
   }
 }
 
-class _StartWalkingButton extends StatelessWidget {
+class _StartWalkingButton extends StatefulWidget {
   const _StartWalkingButton();
+
+  @override
+  State<_StartWalkingButton> createState() => _StartWalkingButtonState();
+}
+
+class _StartWalkingButtonState extends State<_StartWalkingButton> {
+  bool _isNavigating = false;
+
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: () => context.push('/permission'),
+      onPressed: _isNavigating
+          ? null
+          : () async {
+              setState(() => _isNavigating = true);
+              try {
+                await context.push('/permission');
+              } finally {
+                if (mounted) setState(() => _isNavigating = false);
+              }
+            },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppTheme.primaryContainer,
         minimumSize: const Size(double.infinity, 72),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.directions_run, size: 32),
-          SizedBox(width: 12),
-          Text("INICIAR CAMINHADA", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const Icon(Icons.directions_run, size: 32),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              "INICIAR CAMINHADA",
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );
@@ -283,12 +325,23 @@ class _GroupWalkingCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Caminhada em Grupo Hoje", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              Text("16:30", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+              Expanded(
+                child: Text(
+                  "Caminhada em Grupo Hoje",
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "16:30",
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+              ),
             ],
           ),
           const SizedBox(height: 16),

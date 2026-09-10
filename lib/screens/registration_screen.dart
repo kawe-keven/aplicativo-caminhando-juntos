@@ -162,7 +162,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       
                       // Requisito 4: Salvar o usuário localmente antes de navegar
                       await notifier.completeRegistration();
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                       
                       final router = GoRouter.of(context);
                       Future.delayed(const Duration(seconds: 1), () {

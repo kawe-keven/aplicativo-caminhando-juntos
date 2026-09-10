@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:caminhandojuntos/models/tracking_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 final trackingProvider = StateNotifierProvider<TrackingNotifier, TrackingState>((ref) {
   return TrackingNotifier();
@@ -54,6 +54,10 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
     if (state.status != TrackingStatus.tracking) return;
 
     final newPoint = LatLng(position.latitude, position.longitude);
+    
+    // Evitar duplicatas se o usuário estiver parado
+    if (state.path.isNotEmpty && state.path.last == newPoint) return;
+
     final List<LatLng> newPath = List.from(state.path)..add(newPoint);
     
     double addedDistance = 0;
@@ -65,6 +69,10 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
       ) / 1000;
     }
 
+    // Filtro contra "saltos" de GPS (acima de 20km/h não é caminhada)
+    // 0.05 KM (50m) por atualização (5s) ~ 36km/h. Um pouco alto para idosos mas aceitável para sinal instável.
+    if (addedDistance > 0.05) return;
+
     final double newDistance = state.distanceKm + addedDistance;
     
     // REQUISITO DE SEGURANÇA (Escopo 2): 
@@ -74,6 +82,8 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
       currentPosition: newPoint,
       path: newPath,
       distanceKm: newDistance,
+      // Estimativa baseada em KM real: ~1400 passos por km
+      steps: (newDistance * 1400).toInt(),
       // Moedas mostradas em tempo real são APENAS UMA ESTIMATIVA.
       coinsEarned: (newDistance * 10).toInt(), 
     );
@@ -92,11 +102,6 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
     state = state.copyWith(status: TrackingStatus.finished);
     _positionSubscription?.cancel();
     _timer?.cancel();
-
-    // AÇÃO NECESSÁRIA NO BACKEND:
-    // Chamar endpoint POST /activity/sync enviando {distanceKm, durationSeconds, steps}.
-    // O Java validará se a distância é compatível com o tempo (prevenindo spoofing de GPS) 
-    // e retornará o saldo REAL de moedas.
   }
 
   void pauseTracking() => state = state.copyWith(status: TrackingStatus.paused);

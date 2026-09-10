@@ -1,5 +1,6 @@
 import 'package:caminhandojuntos/providers/achievements_provider.dart';
 import 'package:caminhandojuntos/providers/dashboard_provider.dart';
+import 'package:caminhandojuntos/models/user_progress.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/achievement_card_widget.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,7 @@ class AchievementsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final achievements = ref.watch(achievementsProvider);
-    final progress = ref.watch(dashboardProvider);
+    final dashboardState = ref.watch(dashboardProvider);
 
     final unlockedCount = achievements.where((a) => a.isUnlocked).length;
     final totalCount = achievements.length;
@@ -22,7 +23,7 @@ class AchievementsScreen extends ConsumerWidget {
       child: Column(
         children: [
           // Cabeçalho Customizado
-          _buildHeader(context, progress),
+          _buildHeader(context, dashboardState.progress),
           
           Expanded(
             child: ListView(
@@ -62,7 +63,7 @@ class AchievementsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, dynamic progress) {
+  Widget _buildHeader(BuildContext context, UserProgress progress) {
     return Container(
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 8, left: 16, right: 16),
       color: Colors.white,

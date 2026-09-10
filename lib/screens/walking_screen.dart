@@ -1,10 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:caminhandojuntos/providers/tracking_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/models/tracking_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:go_router/go_router.dart';
 
 class WalkingScreen extends ConsumerStatefulWidget {
@@ -15,7 +15,7 @@ class WalkingScreen extends ConsumerStatefulWidget {
 }
 
 class _WalkingScreenState extends ConsumerState<WalkingScreen> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   
   @override
   void initState() {
@@ -37,13 +37,11 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     final tracking = ref.watch(trackingProvider);
     final notifier = ref.read(trackingProvider.notifier);
 
-    // Requisito: Mover a lógica de atualização da câmera para um listener fora do build
+    // Requisito: Mover a câmera conforme a posição REAL muda
     ref.listen(trackingProvider, (previous, next) {
-      if (next.currentPosition != null && _mapController != null) {
+      if (next.currentPosition != null) {
         if (previous?.currentPosition != next.currentPosition) {
-          _mapController!.animateCamera(
-            CameraUpdate.newLatLng(next.currentPosition!),
-          );
+          _mapController.move(next.currentPosition!, _mapController.camera.zoom);
         }
       }
     });
@@ -61,14 +59,11 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
         title: Row(
           children: [
             ClipOval(
-              child: CachedNetworkImage(
-                imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDnXnYSEf5vNKkrXOSiWGFcLPevMAdoJt4TIquf4wk9Ax2icbSY8L8e7D91piDk1gjEOJEwrxT5iaeHtnc-YCGJ5-o2rZzkPNBvnadpgfANzn5cq5zVlXs-T5D_xZecBf9LOlNO727m3Om1ft-FglbbYSFOcszqpkub8ay7V-fN4k-WYrgCxZP9GTS_60gmr32Ut5HJN-d_LI1LPUKCGYd-HQwYSR4zhtx1VBDvkqpOBx25sNYHDFrK",
+              child: Image.asset(
+                "assets/images/logo.png",
                 width: 32,
                 height: 32,
-                memCacheWidth: 64,
-                memCacheHeight: 64,
-                placeholder: (context, url) => Container(color: Colors.grey[200]),
-                errorWidget: (context, url, error) => const Icon(Icons.directions_walk, color: AppTheme.primaryColor),
+                fit: BoxFit.cover,
               ),
             ),
             const SizedBox(width: 8),
@@ -98,6 +93,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
           child: Column(
             children: [
               const SizedBox(height: 16),
+              // Status Bar
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -131,7 +127,10 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 16),
+
+              // Map (OpenStreetMap via flutter_map)
               Container(
                 height: 240,
                 width: double.infinity,
@@ -141,27 +140,50 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: tracking.currentPosition ?? const LatLng(-23.5505, -46.6333),
-                      zoom: 16,
+                  child: FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: tracking.currentPosition ?? const LatLng(-23.5505, -46.6333),
+                      initialZoom: 16,
                     ),
-                    onMapCreated: (controller) => _mapController = controller,
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: false,
-                    zoomControlsEnabled: false,
-                    polylines: {
-                      Polyline(
-                        polylineId: const PolylineId('path'),
-                        points: tracking.path,
-                        color: AppTheme.primaryColor,
-                        width: 8,
+                    children: [
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.example.caminhandojuntos',
                       ),
-                    },
+                      if (tracking.path.isNotEmpty)
+                        PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: tracking.path,
+                              color: AppTheme.primaryColor,
+                              strokeWidth: 8,
+                            ),
+                          ],
+                        ),
+                      if (tracking.currentPosition != null)
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: tracking.currentPosition!,
+                              width: 60,
+                              height: 60,
+                              child: const Icon(
+                                Icons.directions_walk,
+                                color: AppTheme.primaryColor,
+                                size: 40,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
                 ),
               ),
+
               const SizedBox(height: 16),
+
+              // Metrics Grid
               Expanded(
                 child: GridView.count(
                   crossAxisCount: 2,
@@ -203,6 +225,8 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                   ],
                 ),
               ),
+
+              // Feedback message
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -230,7 +254,10 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 16),
+
+              // Controls
               Row(
                 children: [
                   Expanded(
@@ -275,7 +302,9 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 12),
+
               ElevatedButton.icon(
                 onPressed: () => _showFinishDialog(context, notifier, tracking.coinsEarned),
                 icon: const Icon(Icons.stop_circle, size: 32),

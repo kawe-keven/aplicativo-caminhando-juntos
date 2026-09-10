@@ -22,22 +22,27 @@ class DashboardStatsGrid extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _StatItem(
-            icon: Icons.straighten,
-            value: "${distance.toStringAsFixed(1)} km",
-            label: "Distância",
+          Expanded(
+            child: _StatItem(
+              icon: Icons.straighten,
+              value: "${distance.toStringAsFixed(1)} km",
+              label: "Distância",
+            ),
           ),
-          _StatItem(
-            icon: Icons.timer,
-            value: "$duration min",
-            label: "Tempo",
+          Expanded(
+            child: _StatItem(
+              icon: Icons.timer,
+              value: "$duration min",
+              label: "Tempo",
+            ),
           ),
-          _StatItem(
-            icon: Icons.local_fire_department,
-            value: "$calories kcal",
-            label: "Gasto",
+          Expanded(
+            child: _StatItem(
+              icon: Icons.local_fire_department,
+              value: "$calories kcal",
+              label: "Gasto",
+            ),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:caminhandojuntos/models/reward.dart';
 import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/providers/store_provider.dart';
+import 'package:caminhandojuntos/models/user_progress.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/reward_card_widget.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,7 @@ class RewardsStoreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dashboardState = ref.watch(dashboardProvider);
+    final DashboardState dashboardState = ref.watch(dashboardProvider);
     final filter = ref.watch(storeFilterProvider);
     final rewards = ref.watch(filteredRewardsProvider);
 
@@ -26,6 +27,7 @@ class RewardsStoreScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                // Correção Erro 2: Acesso correto via .progress.coins
                 _BalanceCard(coins: dashboardState.progress.coins),
                 const SizedBox(height: 24),
                 _FilterSection(filter: filter, ref: ref),
@@ -44,7 +46,7 @@ class RewardsStoreScreen extends ConsumerWidget {
                     final reward = rewards[index];
                     return RewardCardWidget(
                       reward: reward,
-                      // Passa o estado de carregamento para o botão no futuro se necessário
+                      // Correção Erro 3: Passando o estado correto
                       onRedeem: () => _showRedeemDialog(context, ref, reward, dashboardState),
                     );
                   },
@@ -59,7 +61,7 @@ class RewardsStoreScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, dynamic progress) {
+  Widget _buildHeader(BuildContext context, UserProgress progress) {
     return Container(
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 8, left: 16, right: 16),
       color: Colors.white,
@@ -91,6 +93,7 @@ class RewardsStoreScreen extends ConsumerWidget {
   }
 
   void _showRedeemDialog(BuildContext context, WidgetRef ref, Reward reward, DashboardState dashboardState) {
+    // Correção Erro 3 cont.: Acesso correto via .progress.coins
     if (dashboardState.progress.coins < reward.cost) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Saldo insuficiente para resgatar este prêmio.")),
@@ -107,7 +110,8 @@ class RewardsStoreScreen extends ConsumerWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
           ElevatedButton(
-            onPressed: dashboardState.isRedeeming 
+            // Correção Erro 4: Condição booleana explícita
+            onPressed: dashboardState.isRedeeming == true 
               ? null 
               : () async {
                   final success = await ref.read(dashboardProvider.notifier).redeemReward(reward.cost);
@@ -116,7 +120,7 @@ class RewardsStoreScreen extends ConsumerWidget {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Prêmio resgatado! Código: CXJ-${reward.id}88")));
                   }
                 },
-            child: dashboardState.isRedeeming 
+            child: dashboardState.isRedeeming == true 
               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
               : const Text("Resgatar"),
           ),

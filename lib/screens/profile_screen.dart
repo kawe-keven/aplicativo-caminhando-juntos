@@ -1,5 +1,6 @@
 import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/providers/user_provider.dart';
+import 'package:caminhandojuntos/models/user_progress.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,7 +78,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(userProvider);
-    final progress = ref.watch(dashboardProvider);
+    final dashboardState = ref.watch(dashboardProvider);
 
     return Material(
       color: AppTheme.backgroundColor,
@@ -92,7 +93,7 @@ class ProfileScreen extends ConsumerWidget {
               children: [
                 _Header(name: user.name, age: user.age),
                 const SizedBox(height: 24),
-                _StatsGrid(progress: progress),
+                _StatsGrid(progress: dashboardState.progress),
                 const SizedBox(height: 24),
                 _SecurityCard(contactName: user.emergencyContactName, contactPhone: user.emergencyContactPhone, onEdit: () => _showEditContactModal(context, ref)),
                 const SizedBox(height: 24),
@@ -145,7 +146,7 @@ class _Header extends StatelessWidget {
 }
 
 class _StatsGrid extends StatelessWidget {
-  final dynamic progress;
+  final UserProgress progress;
   const _StatsGrid({required this.progress});
   @override
   Widget build(BuildContext context) {

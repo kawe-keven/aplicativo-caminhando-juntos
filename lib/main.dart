@@ -6,10 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
-  // Garantir que os bindings do Flutter estejam prontos
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inicializar formatação de data para português
   await initializeDateFormatting('pt_BR', null);
   
   runApp(
@@ -33,13 +30,14 @@ class CaminhaJuntosApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       routerConfig: router,
       builder: (context, child) {
-        // Agora o builder apenas aplica a escala de fonte global
-        // O carregamento inicial foi movido para a SplashScreen
+        // Correção Crítica: O builder do MaterialApp.router NUNCA deve retornar null ou SizedBox.shrink()
+        // se o child for nulo, pois isso quebra o pipeline de renderização e hit testing.
+        // O child só é nulo durante milissegundos de inicialização do GoRouter.
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(accessibility.fontScale),
           ),
-          child: child!,
+          child: child ?? const Material(child: Center(child: CircularProgressIndicator())),
         );
       },
     );
