@@ -80,17 +80,3 @@ O aplicativo foi desenvolvido seguindo rigorosas auditorias de segurança:
 -   **Tratamento de Erros:** Erros técnicos de backend são mascarados para o usuário final, exibindo apenas mensagens amigáveis.
 
 ---
-
-## 👥 Contribuição
-
-Contribuições são bem-vindas! Sinta-se à vontade para abrir uma **Issue** ou enviar um **Pull Request**.
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
----
-
-*Desenvolvido com ❤️ por [Kawê Keven](https://github.com/kawe-keven)*
