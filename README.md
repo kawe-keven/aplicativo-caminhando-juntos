@@ -5,7 +5,8 @@
 [![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev/)
 [![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
-[![License](https://img.shields.io/badge/License-MIT-blue.style=for-the-badge)](#licença)
+[![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
+[![Android Studio](https://img.shields.io/badge/Android%20Studio-3DDC84?style=for-the-badge&logo=android-studio&logoColor=white)](https://developer.android.com/studio)
 
 ---
 
@@ -54,3 +55,7 @@ O aplicativo opera em uma estrutura **Client-Server**:
  │  - Interface e Sensores │               │  - Regras de Negócio    │
  │  - Rastreamento por GPS │◄──────────────┤  - Validação de Moedas  │
  └─────────────────────────┘               └─────────────────────────┘
+
+
+
+
