@@ -24,7 +24,7 @@ class SummaryScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor, size: 30),
           onPressed: () => context.go('/dashboard'),
         ),
-        title: const Text("Resumo Da Caminhada", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Caminhada Validada", style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -38,17 +38,17 @@ class SummaryScreen extends ConsumerWidget {
                     width: 112,
                     height: 112,
                     decoration: const BoxDecoration(color: Color(0xFFFFDCC3), shape: BoxShape.circle),
-                    child: const Icon(Icons.emoji_events, size: 64, color: AppTheme.tertiaryColor),
+                    child: const Icon(Icons.verified, size: 64, color: AppTheme.primaryColor),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "Parabéns, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! 🎉",
+                    "Tudo certo, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! 🎊",
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    "Você completou sua caminhada de hoje com sucesso!",
+                    "O servidor validou seus dados e suas moedas já foram creditadas.",
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 18, color: AppTheme.onSurfaceVariant),
                   ),
@@ -57,17 +57,17 @@ class SummaryScreen extends ConsumerWidget {
 
               const SizedBox(height: 24),
 
-              // Coins Reward Card
+              // Validated Reward Card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppTheme.tertiaryContainer,
+                  color: AppTheme.primaryColor,
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Column(
                   children: [
-                    const Text("RECOMPENSA DIÁRIA", style: TextStyle(color: Color(0xFFFFDCC3), fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1.2)),
+                    const Text("MOEDAS CREDITADAS PELO SERVIDOR", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2)),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -75,19 +75,19 @@ class SummaryScreen extends ConsumerWidget {
                         const Icon(Icons.monetization_on, color: Color(0xFFFFDCC3), size: 40),
                         const SizedBox(width: 12),
                         Text(
-                          "+${tracking.coinsEarned}",
+                          "+${tracking.validatedCoins}",
                           style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Color(0xFFFFDCC3)),
                         ),
                       ],
                     ),
-                    const Text("Moedas Conquistadas!", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w500)),
+                    const Text("Saldo Atualizado com Sucesso!", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              // Metrics Grid
+              // Validated Metrics Grid
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -97,16 +97,16 @@ class SummaryScreen extends ConsumerWidget {
                 mainAxisSpacing: 12,
                 children: [
                   _SummaryMetricCard(
-                    label: "Passos",
-                    value: tracking.steps.toString(),
-                    unit: "passos firmes",
-                    icon: Icons.directions_walk,
+                    label: "Pontos GPS",
+                    value: tracking.rawPath.length.toString(),
+                    unit: "validados",
+                    icon: Icons.gps_fixed,
                     iconColor: AppTheme.primaryColor,
                     iconBgColor: const Color(0xFFB1F1C5),
                   ),
                   _SummaryMetricCard(
-                    label: "Distância",
-                    value: tracking.distanceKm.toStringAsFixed(1),
+                    label: "Distância Real",
+                    value: tracking.validatedDistanceKm.toStringAsFixed(2),
                     unit: "quilômetros",
                     icon: Icons.route,
                     iconColor: AppTheme.secondaryColor,
@@ -119,7 +119,7 @@ class SummaryScreen extends ConsumerWidget {
 
               // CTAs
               BotaoGrandeWidget(
-                text: "Ir para a Loja de Prêmios 🎁",
+                text: "Ver meus prêmios 🎁",
                 onPressed: () => context.push('/store'),
               ),
               const SizedBox(height: 16),
@@ -129,7 +129,7 @@ class SummaryScreen extends ConsumerWidget {
                   context.go('/dashboard');
                 },
                 icon: const Icon(Icons.home, size: 30),
-                label: const Text("Voltar para o Início 🏠", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                label: const Text("Voltar ao Início", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 64),
                   side: const BorderSide(color: AppTheme.primaryColor, width: 2),

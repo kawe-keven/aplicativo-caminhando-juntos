@@ -1,43 +1,45 @@
+import 'package:caminhandojuntos/models/coordinate_model.dart';
 import 'package:latlong2/latlong.dart';
 
-enum TrackingStatus { initial, tracking, paused, finished }
+enum TrackingStatus { initial, tracking, paused, finished, syncing }
 
 class TrackingState {
   final TrackingStatus status;
-  final List<LatLng> path;
+  final List<CoordinateModel> rawPath;
   final Duration duration;
-  final double distanceKm;
-  final int steps;
-  final int coinsEarned;
   final LatLng? currentPosition;
+  
+  // Dados retornados pelo Backend após o sync
+  final double validatedDistanceKm;
+  final int validatedCoins;
 
   TrackingState({
     this.status = TrackingStatus.initial,
-    this.path = const [],
+    this.rawPath = const [],
     this.duration = Duration.zero,
-    this.distanceKm = 0.0,
-    this.steps = 0,
-    this.coinsEarned = 0,
     this.currentPosition,
+    this.validatedDistanceKm = 0.0,
+    this.validatedCoins = 0,
   });
+
+  // Auxiliar para o mapa continuar desenhando a linha
+  List<LatLng> get mapPath => rawPath.map((c) => LatLng(c.latitude, c.longitude)).toList();
 
   TrackingState copyWith({
     TrackingStatus? status,
-    List<LatLng>? path,
+    List<CoordinateModel>? rawPath,
     Duration? duration,
-    double? distanceKm,
-    int? steps,
-    int? coinsEarned,
     LatLng? currentPosition,
+    double? validatedDistanceKm,
+    int? validatedCoins,
   }) {
     return TrackingState(
       status: status ?? this.status,
-      path: path ?? this.path,
+      rawPath: rawPath ?? this.rawPath,
       duration: duration ?? this.duration,
-      distanceKm: distanceKm ?? this.distanceKm,
-      steps: steps ?? this.steps,
-      coinsEarned: coinsEarned ?? this.coinsEarned,
       currentPosition: currentPosition ?? this.currentPosition,
+      validatedDistanceKm: validatedDistanceKm ?? this.validatedDistanceKm,
+      validatedCoins: validatedCoins ?? this.validatedCoins,
     );
   }
 }
