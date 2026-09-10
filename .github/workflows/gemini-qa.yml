@@ -1,0 +1,105 @@
+name: Gemini AI QA Auditor
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install google-generativeai PyGithub
+
+      - name: Run Gemini QA Audit
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<EOF
+          import os
+          import subprocess
+          import google.generativeai as genai
+          from github import Github
+
+          # Configurações
+          genai.configure(api_key=os.environ['GEMINI_API_KEY'])
+          gh = Github(os.environ['GITHUB_TOKEN'])
+          repo_name = os.environ['GITHUB_REPOSITORY']
+          repo = gh.get_repo(repo_name)
+
+          # Captura o diff dos arquivos relevantes
+          try:
+              # Compara o commit atual com o anterior
+              diff = subprocess.check_output(
+                  ['git', 'diff', 'HEAD^', 'HEAD', '--', '*.dart', '*.java', '*.xml', '*.gradle'],
+                  stderr=subprocess.STDOUT
+              ).decode('utf-8')
+          except Exception as e:
+              print(f"Sem diff para analisar ou erro no git: {e}")
+              exit(0)
+
+          if not diff:
+              print("Nenhuma alteração relevante encontrada.")
+              exit(0)
+
+          # Configura o Prompt para o Gemini
+          model = genai.GenerativeModel('gemini-1.5-flash')
+          prompt = f"""
+          Você é um Engenheiro de QA Sênior e Especialista em Segurança. 
+          Analise o seguinte 'git diff' de um projeto Flutter/Java para idosos.
+          Busque por:
+          1. Falhas de segurança (ex: cálculos sensíveis no cliente).
+          2. Erros de lógica de negócio (ex: moedas calculadas errado).
+          3. Problemas de performance ou vazamento de memória.
+          
+          Se encontrar algo CRÍTICO, responda EXATAMENTE no formato JSON abaixo. 
+          Se não encontrar nada crítico, responda apenas 'LIMPO'.
+
+          Formato:
+          {{
+            "title": "Título resumido do bug",
+            "body": "Descrição detalhada do problema e como corrigir"
+          }}
+
+          DIFF:
+          {diff}
+          """
+
+          response = model.generate_content(prompt)
+          result = response.text.strip()
+
+          if result != 'LIMPO':
+              # Remove possíveis marcações de markdown do JSON
+              json_str = result.replace('```json', '').replace('```', '').strip()
+              import json
+              try:
+                  issue_data = json.loads(json_str)
+                  repo.create_issue(
+                      title=f"[QA AUTO] {issue_data['title']}",
+                      body=issue_data['body'],
+                      labels=['bug', 'qa-auto']
+                  )
+                  print("Issue de bug aberta com sucesso!")
+              except Exception as e:
+                  print(f"Erro ao processar resposta do Gemini: {e}")
+          else:
+              print("Auditoria concluída: Nenhum problema crítico encontrado.")
+          EOF
