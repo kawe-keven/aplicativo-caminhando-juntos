@@ -38,7 +38,7 @@ class AchievementsScreen extends ConsumerWidget {
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.7,
+                    childAspectRatio: 0.6,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                   ),
@@ -65,7 +65,7 @@ class AchievementsScreen extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context, UserProgress progress) {
     return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 8, left: 16, right: 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       color: Colors.white,
       child: Row(
         children: [

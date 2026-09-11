@@ -50,12 +50,14 @@ class CustomTextField extends StatelessWidget {
             children: [
               Icon(icon, color: iconColor, size: 24),
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
               ),
             ],
           ),

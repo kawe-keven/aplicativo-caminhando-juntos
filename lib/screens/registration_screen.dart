@@ -45,21 +45,32 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.directions_walk, color: AppTheme.primaryContainer, size: 20),
-                          SizedBox(width: 8),
-                          Text("Passo 1 de 2", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        ],
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.directions_walk, color: AppTheme.primaryContainer, size: 20),
+                            SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                "Passo 1 de 2",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(width: 40, height: 12, decoration: BoxDecoration(color: AppTheme.primaryContainer, borderRadius: BorderRadius.circular(6))),
                         const SizedBox(width: 4),
@@ -93,7 +104,12 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                         children: [
                           Icon(Icons.timer, color: AppTheme.primaryContainer, size: 20),
                           SizedBox(width: 4),
-                          Text("Leva apenas 1 minuto para começar.", style: TextStyle(fontSize: 16)),
+                          Expanded(
+                            child: Text(
+                              "Leva apenas 1 minuto para começar.",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
                         ],
                       ),
                     ],

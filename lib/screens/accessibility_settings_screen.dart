@@ -1,10 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shimmer/shimmer.dart';
 
 class AccessibilitySettingsScreen extends ConsumerWidget {
   const AccessibilitySettingsScreen({super.key});
@@ -26,9 +24,22 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
         ),
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text("CaminhaJuntos", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-            Text("Acessibilidade", style: TextStyle(fontSize: 14, color: AppTheme.onSurfaceVariant)),
+            Flexible(
+              child: Text(
+                "CaminhaJuntos",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Flexible(
+              child: Text(
+                "Acessibilidade",
+                style: TextStyle(fontSize: 14, color: AppTheme.onSurfaceVariant),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
@@ -47,7 +58,13 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                   children: [
                     Icon(Icons.accessibility_new, color: AppTheme.secondaryColor, size: 24),
                     SizedBox(width: 8),
-                    Text("Conforto Adaptado", style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.secondaryColor)),
+                    Flexible(
+                      child: Text(
+                        "Conforto Adaptado",
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.secondaryColor),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -69,18 +86,11 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(16),
               child: Stack(
                 children: [
-                  CachedNetworkImage(
-                    imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuAJhufmG6CpVJyZgC2RJO0IoECNaXZE1xMqI7AsNzzur5K9wF4BDh7feud0A9ByU3erZKqP6fyorWnE4mFCFYuRi4PgFFjm41Cteuf5aPG5Pd48XWmV9SLmgDLtWQ0b6gZCOEKz8dFVKu9r3Dr3Ga4Lijv6fAv5QdLKFDdXgan-fp-RPdPCBBEXNT46jGO2vA0gA7-IDxMC1j-7RfzPue6Z4r_CwVK22MK4KVEI4090vx8X7NDtWjEK",
+                  Image.asset(
+                    "assets/images/logo_launcher.png",
                     height: 180,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    memCacheWidth: 800,
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
-                      child: Container(height: 180, color: Colors.white),
-                    ),
-                    errorWidget: (context, url, error) => Container(height: 180, color: AppTheme.primaryColor),
                   ),
                   Container(
                     height: 180,
@@ -147,11 +157,17 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.visibility, color: AppTheme.secondaryColor, size: 20),
-                          SizedBox(width: 8),
-                          Text("DEMONSTRAÇÃO AO VIVO:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.secondaryColor)),
+                          const Icon(Icons.visibility, color: AppTheme.secondaryColor, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "DEMONSTRAÇÃO AO VIVO:",
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.secondaryColor),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -222,14 +238,11 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDarTN0Xu9ZcYGaaFD37TXo5AutOZTbL-ruXzvETeDvjCisxcvl-RWR5LSaYUH2di4umg1rd60P_IXWAG_bdmJfCjS0TG3V9zELO6QlwrBACocnimgy1e1Xk5pvjYHPpeA6Ac-yhCIDvo8XWuTHRfTMlBLTv5tJA_DFaTD3if-QtNXEjT3wrlR6HcV27ML-RdFsXZKQ89m8nwQx-nvVxcMj5bLqLMvuqalgzEcG8ut3enz3-TPzyrGH",
+                    child: Image.asset(
+                      "assets/images/logo_launcher.png",
                       width: 64,
                       height: 64,
                       fit: BoxFit.cover,
-                      memCacheWidth: 128,
-                      placeholder: (context, url) => Container(color: Colors.grey[300]),
-                      errorWidget: (context, url, error) => const Icon(Icons.person),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -317,7 +330,13 @@ class _SettingsSection extends StatelessWidget {
             children: [
               Icon(icon, color: iconColor, size: 30),
               const SizedBox(width: 12),
-              Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -356,33 +375,39 @@ class _FontSizeOption extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: isSelected ? Colors.white : Colors.white60,
-                    shape: BoxShape.circle,
+            Expanded(
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.white : Colors.white60,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.check,
+                      color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                      size: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.check,
-                    color: isSelected ? AppTheme.primaryColor : Colors.transparent,
-                    size: 20,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? Colors.white : AppTheme.onSurface,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? Colors.white : AppTheme.onSurface,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(

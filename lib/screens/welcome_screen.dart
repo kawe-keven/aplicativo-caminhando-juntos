@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/benefit_card_widget.dart';
@@ -6,7 +5,6 @@ import 'package:caminhandojuntos/widgets/botao_grande_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shimmer/shimmer.dart';
 
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
@@ -44,7 +42,7 @@ class WelcomeScreen extends ConsumerWidget {
                     ),
                     child: ClipOval(
                       child: Image.asset(
-                        "assets/images/logo.png",
+                        "assets/images/logo_launcher.png",
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -82,21 +80,11 @@ class WelcomeScreen extends ConsumerWidget {
               // Hero Image
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: CachedNetworkImage(
-                  imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDMMQ5Xn67waHPsCmcPjwiBWhxFO8OK0kIEcnhC6a7WR_mQkz3S5z0OLaq32NGcjY7mJ4XRpgCa_U-uaxSNuxg2J49u8VhED--ProMmi-ihloXLDp_CDPz6hsZM0QcALMxbNZ94aYqdUgZQqux7D7pHxKVRWDWPQ_ujx3cnqbUydw5r9SYlKenl4gAHwvbWgiXU8W3PDdOyX80_tApOIiKiEubc9cdwUNiIVFHijRqEbYxXkXbpAiRk",
+                child: Image.asset(
+                  "assets/images/logo_launcher.png",
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: Container(height: 200, color: Colors.white),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    height: 200,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.error, size: 50),
-                  ),
                 ),
               ),
 

@@ -113,7 +113,7 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 8, left: 16, right: 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       color: Colors.white,
       child: const Row(
         children: [
@@ -150,16 +150,23 @@ class _StatsGrid extends StatelessWidget {
   const _StatsGrid({required this.progress});
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.5,
+    return Row(
       children: [
-        _StatCard(label: "Passos", value: progress.steps.toString(), icon: Icons.directions_walk),
-        _StatCard(label: "Moedas", value: progress.coins.toString(), icon: Icons.monetization_on),
+        Expanded(
+          child: _StatCard(
+            label: "Passos",
+            value: progress.steps.toString(),
+            icon: Icons.directions_walk,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _StatCard(
+            label: "Moedas",
+            value: progress.coins.toString(),
+            icon: Icons.monetization_on,
+          ),
+        ),
       ],
     );
   }

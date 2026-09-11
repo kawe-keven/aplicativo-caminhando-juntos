@@ -60,7 +60,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
           children: [
             ClipOval(
               child: Image.asset(
-                "assets/images/logo.png",
+                "assets/images/logo_launcher.png",
                 width: 32,
                 height: 32,
                 fit: BoxFit.cover,
@@ -93,9 +93,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
 
               const SizedBox(height: 16),
 
-              // Metrics Grid (Nota: Moedas e Distância removidas daqui se não houver cálculo local)
-              // No entanto, para UX, o prompt diz: "Remova QUALQUER código... que some moedas ou calcule... O app deve apenas exibir o resultado que o backend devolver."
-              // Isso implica que durante a caminhada os campos ficam vazios ou mostram "--".
+              // Metrics Grid
               _buildLiveMetrics(tracking),
 
               const SizedBox(height: 16),
@@ -143,9 +141,12 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
         children: [
           const Icon(Icons.fiber_manual_record, color: Color(0xFFB1F1C5), size: 12),
           const SizedBox(width: 8),
-          Text(
-            status == TrackingStatus.syncing ? "Sincronizando com servidor..." : "Coletando coordenadas GPS...",
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+          Expanded(
+            child: Text(
+              status == TrackingStatus.syncing ? "Sincronizando com servidor..." : "Coletando coordenadas GPS...",
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -323,14 +324,36 @@ class _MetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(children: [Icon(icon, size: 20), const SizedBox(width: 4), Text(label, style: const TextStyle(fontSize: 14))]),
           Row(
             children: [
-              Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Icon(icon, size: 20),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(fontSize: 14),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               if (unit != null) Text(unit!, style: const TextStyle(fontSize: 14)),
             ],
           ),
-          Text(subValue, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          Text(
+            subValue,
+            style: const TextStyle(fontSize: 11, color: Colors.grey),
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );

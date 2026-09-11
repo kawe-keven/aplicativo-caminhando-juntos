@@ -1,8 +1,6 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:caminhandojuntos/models/reward.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:shimmer/shimmer.dart';
 
 class RewardCardWidget extends StatelessWidget {
   final Reward reward;
@@ -34,22 +32,9 @@ class RewardCardWidget extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              child: CachedNetworkImage(
-                imageUrl: reward.imageUrl,
+              child: Image.asset(
+                "assets/images/logo_launcher.png",
                 fit: BoxFit.cover,
-                // Otimização: Cache de memória baseado no tamanho real do card
-                memCacheWidth: 400,
-                memCacheHeight: 300,
-                placeholder: (context, url) => Shimmer.fromColors(
-                  baseColor: Colors.grey[300]!,
-                  highlightColor: Colors.grey[100]!,
-                  child: Container(color: Colors.white),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: AppTheme.secondaryContainer,
-                  child: const Icon(Icons.card_giftcard, color: AppTheme.secondaryColor, size: 40),
-                ),
-                fadeInDuration: const Duration(milliseconds: 150),
               ),
             ),
           ),
