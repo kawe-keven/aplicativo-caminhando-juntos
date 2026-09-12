@@ -25,8 +25,7 @@ class AppTheme {
   static const Color errorColor = Color(0xFFBA1A1A);
 
   static ThemeData get lightTheme {
-    return ThemeData(
-      useMaterial3: true,
+    return _buildTheme(
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryColor,
         primary: primaryColor,
@@ -43,68 +42,96 @@ class AppTheme {
         onSurface: onSurface,
         onSurfaceVariant: onSurfaceVariant,
       ),
-      textTheme: GoogleFonts.lexendTextTheme().copyWith(
-        displayLarge: GoogleFonts.lexend(
-          fontSize: 40,
-          fontWeight: FontWeight.w700,
-          color: onSurface,
-        ),
-        displayMedium: GoogleFonts.lexend(
-          fontSize: 32,
-          fontWeight: FontWeight.w700,
-          color: onSurface,
-        ),
-        headlineLarge: GoogleFonts.lexend(
-          fontSize: 26,
-          fontWeight: FontWeight.w700,
-          color: onSurface,
-        ),
-        headlineMedium: GoogleFonts.lexend(
-          fontSize: 24,
-          fontWeight: FontWeight.w600,
-          color: onSurface,
-        ),
-        headlineSmall: GoogleFonts.lexend(
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-          color: onSurface,
-        ),
-        titleLarge: GoogleFonts.lexend(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: primaryColor,
-          letterSpacing: 0.4,
-        ),
-        bodyLarge: GoogleFonts.lexend(
-          fontSize: 20,
-          fontWeight: FontWeight.w400,
-          color: onSurface,
-          height: 1.6,
-        ),
-        bodyMedium: GoogleFonts.lexend(
-          fontSize: 18,
-          fontWeight: FontWeight.w400,
-          color: onSurface,
-          height: 1.5,
-        ),
-        labelLarge: GoogleFonts.lexend(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: onPrimary,
-          letterSpacing: 0.4,
+    );
+  }
+
+  static ThemeData get highContrastTheme {
+    return _buildTheme(
+      colorScheme: const ColorScheme(
+        brightness: Brightness.dark,
+        primary: Colors.yellow,
+        onPrimary: Colors.black,
+        secondary: Colors.cyanAccent,
+        onSecondary: Colors.black,
+        tertiary: Colors.orangeAccent,
+        onTertiary: Colors.black,
+        surface: Colors.black,
+        onSurface: Colors.white,
+        error: Colors.redAccent,
+        onError: Colors.white,
+      ),
+      isHighContrast: true,
+    );
+  }
+
+  static ThemeData _buildTheme({
+    required ColorScheme colorScheme,
+    bool isHighContrast = false,
+  }) {
+    final textTheme = GoogleFonts.lexendTextTheme().copyWith(
+      displayLarge: GoogleFonts.lexend(
+        fontSize: 40,
+        fontWeight: FontWeight.w800,
+        color: colorScheme.onSurface,
+      ),
+      headlineLarge: GoogleFonts.lexend(
+        fontSize: 26,
+        fontWeight: FontWeight.w800,
+        color: colorScheme.onSurface,
+      ),
+      headlineMedium: GoogleFonts.lexend(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: colorScheme.onSurface,
+      ),
+      titleLarge: GoogleFonts.lexend(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: isHighContrast ? colorScheme.primary : colorScheme.primary,
+        letterSpacing: 0.4,
+      ),
+      bodyLarge: GoogleFonts.lexend(
+        fontSize: 20,
+        fontWeight: isHighContrast ? FontWeight.w700 : FontWeight.w400,
+        color: colorScheme.onSurface,
+        height: 1.6,
+      ),
+      bodyMedium: GoogleFonts.lexend(
+        fontSize: 18,
+        fontWeight: isHighContrast ? FontWeight.w600 : FontWeight.w400,
+        color: colorScheme.onSurface,
+        height: 1.5,
+      ),
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      textTheme: textTheme,
+      scaffoldBackgroundColor: colorScheme.surface,
+      cardTheme: CardThemeData(
+        color: isHighContrast ? Colors.black : colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: isHighContrast
+              ? const BorderSide(color: Colors.white, width: 2.0)
+              : BorderSide.none,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryContainer,
-          foregroundColor: onPrimary,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
           minimumSize: const Size(double.infinity, 64),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
+            side: isHighContrast
+                ? const BorderSide(color: Colors.white, width: 3.0)
+                : BorderSide.none,
           ),
           textStyle: GoogleFonts.lexend(
             fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w800,
             letterSpacing: 0.4,
           ),
         ),

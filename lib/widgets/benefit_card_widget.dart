@@ -18,6 +18,8 @@ class BenefitCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
@@ -28,13 +30,13 @@ class BenefitCardWidget extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: iconBackgroundColor,
+                color: isHighContrast ? Colors.yellow : iconBackgroundColor,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 36,
-                color: iconColor,
+                color: isHighContrast ? Colors.black : iconColor,
               ),
             ),
             const SizedBox(width: 16),
@@ -44,13 +46,17 @@ class BenefitCardWidget extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     description,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: isHighContrast ? FontWeight.w600 : FontWeight.normal,
                         ),
                   ),
                 ],

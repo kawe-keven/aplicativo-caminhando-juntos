@@ -2,6 +2,7 @@ import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/benefit_card_widget.dart';
 import 'package:caminhandojuntos/widgets/botao_grande_widget.dart';
+import 'package:caminhandojuntos/widgets/speakable_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,145 +21,140 @@ class WelcomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Column(
-            children: [
-              // Header & Logo Otimizado
-              Column(
-                children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+        child: Speakable(
+          announceOnLoad: true,
+          text: "Tela de boas-vindas. $welcomeText",
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Column(
+              children: [
+                // Header & Logo Otimizado
+                Column(
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          "assets/images/logo_launcher.png",
+                          fit: BoxFit.cover,
                         ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        "assets/images/logo_launcher.png",
-                        fit: BoxFit.cover,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    "CAMINHAJUNTOS",
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Bem-vindo ao CaminhaJuntos!",
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
+                    const SizedBox(height: 16),
+                    Text(
+                      "CAMINHAJUNTOS",
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Bem-vindo ao CaminhaJuntos!",
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "Caminhe no seu ritmo, ganhe pontos diários e troque por recompensas incríveis nos seus jogos favoritos!",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    "assets/images/logo_launcher.png",
+                    height: 200,
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const BenefitCardWidget(
+                  icon: Icons.directions_walk,
+                  title: "Cuide da sua saúde",
+                  description: "Caminhadas leves no seu próprio tempo e sem pressa.",
+                  iconBackgroundColor: Color(0xFFB1F1C5),
+                  iconColor: AppTheme.primaryColor,
+                ),
+                const BenefitCardWidget(
+                  icon: Icons.monetization_on,
+                  title: "Ganhe Moedas",
+                  description: "Cada passo vira pontos para você trocar por vantagens.",
+                  iconBackgroundColor: Color(0xFFFFDCC3),
+                  iconColor: AppTheme.tertiaryColor,
+                ),
+                const BenefitCardWidget(
+                  icon: Icons.verified_user,
+                  title: "100% Seguro",
+                  description: "Seus dados e contatos de emergência sempre protegidos.",
+                  iconBackgroundColor: Color(0xFFCAE6FF),
+                  iconColor: AppTheme.secondaryColor,
+                ),
+                const SizedBox(height: 32),
+                BotaoGrandeWidget(
+                  text: "Começar Agora",
+                  icon: Icons.arrow_forward,
+                  onPressed: () {
+                    context.push('/registration');
+                  },
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: () => accessibilityNotifier.speak(welcomeText),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 56),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      "Caminhe no seu ritmo, ganhe pontos diários e troque por recompensas incríveis nos seus jogos favoritos!",
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          accessibility.isSpeaking ? Icons.pause_circle : Icons.volume_up,
+                          color: AppTheme.secondaryColor,
+                          size: 30,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            accessibility.isSpeaking
+                                ? "Ouvindo agora... Toque para pausar a voz"
+                                : "Precisa de ajuda? Toque aqui para ouvir as instruções em áudio",
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Hero Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  "assets/images/logo_launcher.png",
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
                 ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Benefits
-              const BenefitCardWidget(
-                icon: Icons.directions_walk,
-                title: "Cuide da sua saúde",
-                description: "Caminhadas leves no seu próprio tempo e sem pressa.",
-                iconBackgroundColor: Color(0xFFB1F1C5),
-                iconColor: AppTheme.primaryColor,
-              ),
-              const BenefitCardWidget(
-                icon: Icons.monetization_on,
-                title: "Ganhe Moedas",
-                description: "Cada passo vira pontos para você trocar por vantagens.",
-                iconBackgroundColor: Color(0xFFFFDCC3),
-                iconColor: AppTheme.tertiaryColor,
-              ),
-              const BenefitCardWidget(
-                icon: Icons.verified_user,
-                title: "100% Seguro",
-                description: "Seus dados e contatos de emergência sempre protegidos.",
-                iconBackgroundColor: Color(0xFFCAE6FF),
-                iconColor: AppTheme.secondaryColor,
-              ),
-
-              const SizedBox(height: 32),
-
-              // CTAs
-              BotaoGrandeWidget(
-                text: "Começar Agora",
-                icon: Icons.arrow_forward,
-                onPressed: () {
-                  context.push('/registration');
-                },
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: () => accessibilityNotifier.speak(welcomeText),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 56),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        accessibility.isSpeaking ? Icons.pause_circle : Icons.volume_up,
-                        color: AppTheme.secondaryColor,
-                        size: 30,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          accessibility.isSpeaking
-                              ? "Ouvindo agora... Toque para pausar a voz"
-                              : "Precisa de ajuda? Toque aqui para ouvir as instruções em áudio",
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

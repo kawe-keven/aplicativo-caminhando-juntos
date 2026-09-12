@@ -1,6 +1,7 @@
 import 'package:caminhandojuntos/models/user_model.dart';
 import 'package:caminhandojuntos/services/user_storage_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 final userStorageServiceProvider = Provider((ref) => UserStorageService());
 
@@ -42,12 +43,17 @@ class UserNotifier extends StateNotifier<UserModel> {
 
   /// Finaliza o cadastro e salva no disco.
   Future<void> completeRegistration() async {
+    // REGRA SOS: Solicita permissão de ligação no momento do cadastro
+    await Permission.phone.request();
+    
     state = state.copyWith(isRegistered: true);
     await _storage.saveUser(state);
   }
 
   /// Atualiza dados existentes (perfil).
   Future<void> updateUser() async {
+    // Garante que a permissão foi solicitada ao atualizar contatos
+    await Permission.phone.request();
     await _storage.saveUser(state);
   }
 

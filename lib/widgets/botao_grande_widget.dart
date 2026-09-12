@@ -1,6 +1,8 @@
+import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BotaoGrandeWidget extends StatelessWidget {
+class BotaoGrandeWidget extends ConsumerWidget {
   final String text;
   final VoidCallback onPressed;
   final IconData? icon;
@@ -13,9 +15,13 @@ class BotaoGrandeWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ElevatedButton(
-      onPressed: onPressed,
+      onPressed: () {
+        // SEGURANÇA E ACESSIBILIDADE: Lê o botão ao clicar
+        ref.read(accessibilityProvider.notifier).speak("Botão selecionado: $text");
+        onPressed();
+      },
       style: ElevatedButton.styleFrom(
         elevation: 8,
         shadowColor: Colors.black.withValues(alpha: 0.4),

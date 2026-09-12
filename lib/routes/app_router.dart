@@ -2,6 +2,7 @@ import 'package:caminhandojuntos/screens/accessibility_settings_screen.dart';
 import 'package:caminhandojuntos/screens/achievements_screen.dart';
 import 'package:caminhandojuntos/screens/dashboard_screen.dart';
 import 'package:caminhandojuntos/screens/permission_screen.dart';
+import 'package:caminhandojuntos/screens/emergency_alert_screen.dart';
 import 'package:caminhandojuntos/screens/profile_screen.dart';
 import 'package:caminhandojuntos/screens/registration_screen.dart';
 import 'package:caminhandojuntos/screens/rewards_store_screen.dart';
@@ -49,6 +50,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/accessibility',
         builder: (context, state) => const AccessibilitySettingsScreen(),
+      ),
+      GoRoute(
+        path: '/emergency',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, String>;
+          return EmergencyAlertScreen(
+            contactName: extra['name']!,
+            contactPhone: extra['phone']!,
+          );
+        },
       ),
 
       // Shell para as abas principais com BottomNav persistente

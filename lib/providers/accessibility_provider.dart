@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -44,11 +45,43 @@ class AccessibilityState {
 class AccessibilityNotifier extends StateNotifier<AccessibilityState> {
   final FlutterTts _tts = FlutterTts();
 
-  AccessibilityNotifier() : super(AccessibilityState());
+  AccessibilityNotifier() : super(AccessibilityState()) {
+    _initTts();
+  }
 
+  Future<void> _initTts() async {
+    await _tts.setLanguage("pt-BR");
+    // Velocidade um pouco reduzida para melhor compreensão de idosos
+    await _tts.setSpeechRate(0.45); 
+    await _tts.setPitch(1.0);
+
+    _tts.setStartHandler(() {
+      state = state.copyWith(isSpeaking: true);
+    });
+
+    _tts.setCompletionHandler(() {
+      state = state.copyWith(isSpeaking: false);
+    });
+
+    _tts.setErrorHandler((msg) {
+      debugPrint("TTS Error: $msg");
+      state = state.copyWith(isSpeaking: false);
+    });
+  }
+
+  /// Fala o texto fornecido se a leitura de voz estiver ativada.
   Future<void> speak(String text) async {
-    if (!state.voiceReadingEnabled) return;
+    if (!state.voiceReadingEnabled || text.isEmpty) return;
+    
+    // Interrompe qualquer fala anterior antes de começar a nova
+    await _tts.stop();
     await _tts.speak(text);
+  }
+
+  /// Interrompe a fala atual.
+  Future<void> stop() async {
+    await _tts.stop();
+    state = state.copyWith(isSpeaking: false);
   }
 
   void updateFontScale(double scale) {
@@ -57,6 +90,7 @@ class AccessibilityNotifier extends StateNotifier<AccessibilityState> {
 
   void toggleVoiceReading(bool value) {
     state = state.copyWith(voiceReadingEnabled: value);
+    if (!value) stop();
   }
 
   void toggleSoundAlerts(bool value) {
@@ -72,6 +106,7 @@ class AccessibilityNotifier extends StateNotifier<AccessibilityState> {
   }
 
   void reset() {
+    stop();
     state = AccessibilityState();
   }
 }

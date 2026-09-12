@@ -11,37 +11,46 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(accessibilityProvider);
     final notifier = ref.read(accessibilityProvider.notifier);
+    final isHighContrast = state.highContrastEnabled;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white.withValues(alpha: 0.9),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         toolbarHeight: 80,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor, size: 30),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary, size: 30),
           onPressed: () => context.pop(),
         ),
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
               child: Text(
                 "CaminhaJuntos",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                style: TextStyle(
+                  fontSize: 20, 
+                  fontWeight: FontWeight.bold, 
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             Flexible(
               child: Text(
                 "Acessibilidade",
-                style: TextStyle(fontSize: 14, color: AppTheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 14, 
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
+        shape: isHighContrast ? const Border(bottom: BorderSide(color: Colors.white, width: 2)) : null,
       ),
       body: SafeArea(
         child: ListView(
@@ -52,16 +61,27 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
               alignment: Alignment.centerLeft,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(color: AppTheme.secondaryContainer, borderRadius: BorderRadius.circular(20)),
-                child: const Row(
+                decoration: BoxDecoration(
+                  color: isHighContrast ? Colors.yellow : AppTheme.secondaryContainer, 
+                  borderRadius: BorderRadius.circular(20),
+                  border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+                ),
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.accessibility_new, color: AppTheme.secondaryColor, size: 24),
-                    SizedBox(width: 8),
+                    Icon(
+                      Icons.accessibility_new, 
+                      color: isHighContrast ? Colors.black : AppTheme.secondaryColor, 
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        "Conforto Adaptado",
-                        style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.secondaryColor),
+                        "Conforto Adaptado", 
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold, 
+                          color: isHighContrast ? Colors.black : AppTheme.secondaryColor,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -72,11 +92,17 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               "Configurações de Acessibilidade ⚙️",
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                color: Theme.of(context).colorScheme.primary, 
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            const Text(
+            Text(
               "Personalize o aplicativo para o seu conforto visual e sonoro.",
-              style: TextStyle(fontSize: 18, color: AppTheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 18, 
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
 
             const SizedBox(height: 24),
@@ -99,16 +125,25 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                       gradient: LinearGradient(
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
-                        colors: [AppTheme.primaryColor.withValues(alpha: 0.8), Colors.transparent],
+                        colors: [
+                          isHighContrast 
+                            ? Colors.black.withValues(alpha: 0.9) 
+                            : AppTheme.primaryColor.withValues(alpha: 0.8), 
+                          Colors.transparent,
+                        ],
                       ),
                     ),
                     padding: const EdgeInsets.all(16),
                     alignment: Alignment.bottomLeft,
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.sentiment_satisfied, color: Color(0xFFB1F1C5), size: 28),
-                        SizedBox(width: 8),
-                        Expanded(
+                        Icon(
+                          Icons.sentiment_satisfied, 
+                          color: isHighContrast ? Colors.yellow : const Color(0xFFB1F1C5), 
+                          size: 28,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
                           child: Text(
                             "Caminhadas mais confortáveis e seguras para os seus olhos",
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
@@ -127,6 +162,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             _SettingsSection(
               icon: Icons.format_size,
               title: "Tamanho das Letras (Fontes)",
+              isHighContrast: isHighContrast,
               children: [
                 const Text("Escolha o tamanho que fica mais nítido para ler:", style: TextStyle(fontSize: 16)),
                 const SizedBox(height: 16),
@@ -153,18 +189,30 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: AppTheme.secondaryContainer, borderRadius: BorderRadius.circular(16)),
+                  decoration: BoxDecoration(
+                    color: isHighContrast ? Colors.black : AppTheme.secondaryContainer, 
+                    borderRadius: BorderRadius.circular(16),
+                    border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.visibility, color: AppTheme.secondaryColor, size: 20),
+                          Icon(
+                            Icons.visibility, 
+                            color: isHighContrast ? Colors.yellow : AppTheme.secondaryColor, 
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               "DEMONSTRAÇÃO AO VIVO:",
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.secondaryColor),
+                              style: TextStyle(
+                                fontSize: 12, 
+                                fontWeight: FontWeight.bold, 
+                                color: isHighContrast ? Colors.yellow : AppTheme.secondaryColor,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -173,7 +221,11 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Text(
                         "Texto de teste: As letras ficarão deste tamanho na tela.",
-                        style: TextStyle(fontSize: 18 * state.fontScale, fontWeight: FontWeight.w500, color: AppTheme.onSurface),
+                        style: TextStyle(
+                          fontSize: 18 * state.fontScale, 
+                          fontWeight: isHighContrast ? FontWeight.bold : FontWeight.w500, 
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ],
                   ),
@@ -187,7 +239,8 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             _SettingsSection(
               icon: Icons.hearing,
               title: "Ajuda por Voz e Sons",
-              iconColor: AppTheme.secondaryColor,
+              iconColor: isHighContrast ? Colors.cyanAccent : AppTheme.secondaryColor,
+              isHighContrast: isHighContrast,
               children: [
                 _ToggleItem(
                   label: "Ativar Leitura de Telas por Voz 🔊",
@@ -218,7 +271,8 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             _SettingsSection(
               icon: Icons.contrast,
               title: "Modo de Alto Contraste",
-              iconColor: AppTheme.tertiaryColor,
+              iconColor: isHighContrast ? Colors.yellow : AppTheme.tertiaryColor,
+              isHighContrast: isHighContrast,
               children: [
                 _ToggleItem(
                   label: "Cores com Contraste Máximo 👁️",
@@ -234,7 +288,11 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             // Volunteer help Otimizado
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFFF1F3FF), borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                color: isHighContrast ? Colors.black : const Color(0xFFF1F3FF), 
+                borderRadius: BorderRadius.circular(16),
+                border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+              ),
               child: Row(
                 children: [
                   ClipOval(
@@ -265,9 +323,9 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             ElevatedButton.icon(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Preferências salvas com sucesso!"),
-                    backgroundColor: AppTheme.primaryColor,
+                  SnackBar(
+                    content: const Text("Preferências salvas com sucesso!"),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                   ),
                 );
                 context.pop();
@@ -275,10 +333,13 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
               icon: const Icon(Icons.check_circle, size: 28),
               label: const Text("Salvar Preferências ✓"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 minimumSize: const Size(double.infinity, 72),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: isHighContrast ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
+                ),
                 textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
@@ -288,7 +349,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
               icon: const Icon(Icons.restart_alt),
               label: const Text("Restaurar Padrão", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               style: TextButton.styleFrom(
-                foregroundColor: AppTheme.primaryColor,
+                foregroundColor: isHighContrast ? Colors.yellow : AppTheme.primaryColor,
                 minimumSize: const Size(double.infinity, 56),
               ),
             ),
@@ -305,12 +366,14 @@ class _SettingsSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
   final Color iconColor;
+  final bool isHighContrast;
 
   const _SettingsSection({
     required this.icon,
     required this.title,
     required this.children,
     this.iconColor = AppTheme.primaryColor,
+    this.isHighContrast = false,
   });
 
   @override
@@ -319,9 +382,10 @@ class _SettingsSection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+        boxShadow: !isHighContrast ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))] : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,15 +426,22 @@ class _FontSizeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryContainer : const Color(0xFFF1F3FF),
+          color: isSelected 
+            ? (isHighContrast ? Colors.yellow : AppTheme.primaryContainer) 
+            : (isHighContrast ? Colors.black : const Color(0xFFF1F3FF)),
           borderRadius: BorderRadius.circular(12),
-          border: isSelected ? Border.all(color: AppTheme.primaryColor, width: 2) : null,
+          border: Border.all(
+            color: isSelected ? (isHighContrast ? Colors.white : AppTheme.primaryColor) : (isHighContrast ? Colors.white38 : Colors.transparent), 
+            width: 2,
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -382,12 +453,12 @@ class _FontSizeOption extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white : Colors.white60,
+                      color: isSelected ? (isHighContrast ? Colors.black : Colors.white) : Colors.white60,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.check,
-                      color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                      color: isSelected ? (isHighContrast ? Colors.yellow : AppTheme.primaryColor) : Colors.transparent,
                       size: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -400,7 +471,9 @@ class _FontSizeOption extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? Colors.white : AppTheme.onSurface,
+                        color: isSelected 
+                          ? (isHighContrast ? Colors.black : Colors.white) 
+                          : (isHighContrast ? Colors.white : AppTheme.onSurface),
                       ),
                     ),
                   ),
@@ -411,7 +484,7 @@ class _FontSizeOption extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primaryColor : Colors.white,
+                color: isSelected ? (isHighContrast ? Colors.black : AppTheme.primaryColor) : (isHighContrast ? Colors.white12 : Colors.white),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -419,7 +492,7 @@ class _FontSizeOption extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : AppTheme.onSurfaceVariant,
+                  color: isSelected ? (isHighContrast ? Colors.yellow : Colors.white) : AppTheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -445,6 +518,8 @@ class _ToggleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       children: [
         Expanded(
@@ -453,14 +528,23 @@ class _ToggleItem extends StatelessWidget {
             children: [
               Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(fontSize: 14, color: AppTheme.onSurfaceVariant)),
+              Text(
+                subtitle, 
+                style: TextStyle(
+                  fontSize: 14, 
+                  color: isHighContrast ? Colors.white70 : AppTheme.onSurfaceVariant,
+                ),
+              ),
             ],
           ),
         ),
         Switch.adaptive(
           value: value,
           onChanged: onChanged,
-          activeTrackColor: AppTheme.primaryColor,
+          activeTrackColor: isHighContrast ? Colors.yellow : AppTheme.primaryColor,
+          thumbColor: isHighContrast 
+            ? WidgetStateProperty.resolveWith((states) => isHighContrast ? Colors.black : null)
+            : null,
         ),
       ],
     );

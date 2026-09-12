@@ -27,12 +27,12 @@ class CaminhaJuntosApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'CaminhaJuntos',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      // Aplica o tema de alto contraste baseado nas preferências do usuário
+      theme: accessibility.highContrastEnabled 
+          ? AppTheme.highContrastTheme 
+          : AppTheme.lightTheme,
       routerConfig: router,
       builder: (context, child) {
-        // Correção Crítica: O builder do MaterialApp.router NUNCA deve retornar null ou SizedBox.shrink()
-        // se o child for nulo, pois isso quebra o pipeline de renderização e hit testing.
-        // O child só é nulo durante milissegundos de inicialização do GoRouter.
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(accessibility.fontScale),

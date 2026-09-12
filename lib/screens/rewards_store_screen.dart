@@ -4,6 +4,7 @@ import 'package:caminhandojuntos/providers/store_provider.dart';
 import 'package:caminhandojuntos/models/user_progress.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/reward_card_widget.dart';
+import 'package:caminhandojuntos/widgets/speakable_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,73 +18,94 @@ class RewardsStoreScreen extends ConsumerWidget {
     final rewards = ref.watch(filteredRewardsProvider);
 
     return Material(
-      color: AppTheme.backgroundColor,
-      child: Column(
-        children: [
-          // Cabeçalho Customizado
-          _buildHeader(context, dashboardState.progress),
-          
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                // Correção Erro 2: Acesso correto via .progress.coins
-                _BalanceCard(coins: dashboardState.progress.coins),
-                const SizedBox(height: 24),
-                _FilterSection(filter: filter, ref: ref),
-                const SizedBox(height: 24),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.6,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+      color: Theme.of(context).colorScheme.surface,
+      child: Speakable(
+        announceOnLoad: true,
+        text: "Loja de prêmios aberta. Você tem ${dashboardState.progress.coins} moedas. "
+            "Toque em um prêmio para ouvir detalhes ou resgatar.",
+        child: Column(
+          children: [
+            // Cabeçalho Customizado
+            _buildHeader(context, dashboardState.progress),
+            
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  _BalanceCard(coins: dashboardState.progress.coins),
+                  const SizedBox(height: 24),
+                  _FilterSection(filter: filter, ref: ref),
+                  const SizedBox(height: 24),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.6,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: rewards.length,
+                    itemBuilder: (context, index) {
+                      final reward = rewards[index];
+                      return RewardCardWidget(
+                        reward: reward,
+                        onRedeem: () => _showRedeemDialog(context, ref, reward, dashboardState),
+                      );
+                    },
                   ),
-                  itemCount: rewards.length,
-                  itemBuilder: (context, index) {
-                    final reward = rewards[index];
-                    return RewardCardWidget(
-                      reward: reward,
-                      // Correção Erro 3: Passando o estado correto
-                      onRedeem: () => _showRedeemDialog(context, ref, reward, dashboardState),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                _InfoFooter(),
-              ],
+                  const SizedBox(height: 24),
+                  _InfoFooter(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context, UserProgress progress) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 8, left: 16, right: 16),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: isHighContrast 
+            ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
+            : null,
+      ),
       child: Row(
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("CaminhaJuntos", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-              Text("Prêmios", style: TextStyle(fontSize: 12, color: AppTheme.onSurfaceVariant)),
+              Text("CaminhaJuntos", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+              Text("Prêmios", style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
           ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: const Color(0xFFFFDCC3), borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(
+              color: isHighContrast ? Colors.yellow : const Color(0xFFFFDCC3), 
+              borderRadius: BorderRadius.circular(20),
+              border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+            ),
             child: Row(
               children: [
-                const Icon(Icons.monetization_on, color: AppTheme.tertiaryColor, size: 24),
+                Icon(Icons.monetization_on, color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, size: 24),
                 const SizedBox(width: 4),
-                Text(progress.coins.toString(), style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.tertiaryColor, fontSize: 18)),
+                Text(
+                  progress.coins.toString(), 
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, 
+                    fontSize: 18,
+                  ),
+                ),
               ],
             ),
           ),
@@ -93,7 +115,6 @@ class RewardsStoreScreen extends ConsumerWidget {
   }
 
   void _showRedeemDialog(BuildContext context, WidgetRef ref, Reward reward, DashboardState dashboardState) {
-    // Correção Erro 3 cont.: Acesso correto via .progress.coins
     if (dashboardState.progress.coins < reward.cost) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Saldo insuficiente para resgatar este prêmio.")),
@@ -110,7 +131,6 @@ class RewardsStoreScreen extends ConsumerWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
           ElevatedButton(
-            // Correção Erro 4: Condição booleana explícita
             onPressed: dashboardState.isRedeeming == true 
               ? null 
               : () async {
@@ -135,27 +155,40 @@ class _BalanceCard extends StatelessWidget {
   const _BalanceCard({required this.coins});
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+        boxShadow: !isHighContrast ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))] : null,
       ),
       child: Row(
         children: [
           Container(
             width: 56,
             height: 56,
-            decoration: const BoxDecoration(color: Color(0xFFFFDCC3), shape: BoxShape.circle),
-            child: const Icon(Icons.monetization_on, color: AppTheme.tertiaryColor, size: 30),
+            decoration: BoxDecoration(
+              color: isHighContrast ? Colors.yellow : const Color(0xFFFFDCC3), 
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.monetization_on, color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, size: 30),
           ),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text("Seu Saldo Disponível", style: TextStyle(fontSize: 16)),
-              Text("$coins Moedas", style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              Text(
+                "$coins Moedas", 
+                style: TextStyle(
+                  fontSize: 28, 
+                  fontWeight: FontWeight.bold,
+                  color: isHighContrast ? Colors.yellow : null,
+                ),
+              ),
             ],
           ),
         ],
@@ -170,9 +203,15 @@ class _FilterSection extends StatelessWidget {
   const _FilterSection({required this.filter, required this.ref});
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(color: AppTheme.surfaceContainerHigh, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: isHighContrast ? Colors.black : AppTheme.surfaceContainerHigh, 
+        borderRadius: BorderRadius.circular(16),
+        border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+      ),
       child: Row(
         children: [
           _FilterTab(label: "Todos", isSelected: filter == RewardCategory.all, onTap: () => ref.read(storeFilterProvider.notifier).state = RewardCategory.all),
@@ -191,6 +230,8 @@ class _FilterTab extends StatelessWidget {
   const _FilterTab({required this.label, required this.isSelected, required this.onTap});
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -198,8 +239,18 @@ class _FilterTab extends StatelessWidget {
         child: Container(
           height: 52,
           alignment: Alignment.center,
-          decoration: isSelected ? BoxDecoration(color: AppTheme.primaryContainer, borderRadius: BorderRadius.circular(12)) : null,
-          child: Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : AppTheme.onSurfaceVariant)),
+          decoration: isSelected ? BoxDecoration(
+            color: isHighContrast ? Colors.yellow : AppTheme.primaryContainer, 
+            borderRadius: BorderRadius.circular(12),
+          ) : null,
+          child: Text(
+            label, 
+            style: TextStyle(
+              fontSize: 16, 
+              fontWeight: FontWeight.bold, 
+              color: isSelected ? (isHighContrast ? Colors.black : Colors.white) : (isHighContrast ? Colors.white : AppTheme.onSurfaceVariant),
+            ),
+          ),
         ),
       ),
     );
@@ -209,14 +260,25 @@ class _FilterTab extends StatelessWidget {
 class _InfoFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: AppTheme.secondaryContainer, borderRadius: BorderRadius.circular(16)),
-      child: const Row(
+      decoration: BoxDecoration(
+        color: isHighContrast ? Colors.black : AppTheme.secondaryContainer, 
+        borderRadius: BorderRadius.circular(16),
+        border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+      ),
+      child: Row(
         children: [
-          Icon(Icons.help_outline, color: AppTheme.secondaryColor, size: 30),
-          SizedBox(width: 12),
-          Expanded(child: Text("O resgate é instantâneo e você recebe o código na hora!", style: TextStyle(fontSize: 16))),
+          Icon(Icons.help_outline, color: isHighContrast ? Colors.cyanAccent : AppTheme.secondaryColor, size: 30),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              "O resgate é instantâneo e você recebe o código na hora!", 
+              style: TextStyle(fontSize: 16, fontWeight: isHighContrast ? FontWeight.bold : FontWeight.normal),
+            ),
+          ),
         ],
       ),
     );

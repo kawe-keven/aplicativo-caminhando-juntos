@@ -5,7 +5,9 @@ import 'package:caminhandojuntos/models/user_progress.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/dashboard_stats_grid.dart';
 import 'package:caminhandojuntos/widgets/step_progress_widget.dart';
+import 'package:caminhandojuntos/widgets/speakable_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,82 +20,100 @@ class DashboardScreen extends ConsumerWidget {
     final user = ref.watch(userProvider);
     final weather = ref.watch(weatherProvider);
 
+    final String welcomeMsg = "Bom dia, ${user.name.isEmpty ? 'Seu Antônio' : user.name}. "
+        "Seu saldo atual é de ${dashboardState.progress.coins} moedas. "
+        "Hoje você já completou ${dashboardState.progress.steps} passos de sua meta.";
+
     return Material(
-      color: AppTheme.backgroundColor,
+      color: Theme.of(context).colorScheme.surface,
       child: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            // Cabeçalho Customizado
-            _buildHeader(context, dashboardState.progress),
-            
-            Expanded(
-              child: CustomScrollView(
-                cacheExtent: 500.0,
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        Text(
-                          "Bom dia, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! ☀️",
-                          key: const ValueKey('welcome_text'),
-                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: AppTheme.primaryColor),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          key: const ValueKey('weather_row'),
-                          children: [
-                            const Icon(Icons.sunny, color: AppTheme.secondaryColor, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                "${weather.formattedDate} • ${weather.temperature} - ${weather.isLoading ? 'Buscando clima...' : 'Ótimo para caminhar'}",
-                                style: const TextStyle(fontSize: 16, color: AppTheme.onSurfaceVariant),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+        child: Speakable(
+          announceOnLoad: true,
+          text: welcomeMsg,
+          child: Column(
+            children: [
+              // Cabeçalho Customizado
+              _buildHeader(context, ref, dashboardState.progress),
+              
+              Expanded(
+                child: CustomScrollView(
+                  scrollCacheExtent: const ScrollCacheExtent.pixels(500.0),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          Text(
+                            "Bom dia, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! ☀️",
+                            key: const ValueKey('welcome_text'),
+                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        _BalanceCard(
-                          key: const ValueKey('balance_card'),
-                          coins: dashboardState.progress.coins,
-                        ),
-                        const SizedBox(height: 24),
-                        _ProgressCard(
-                          key: const ValueKey('progress_card'),
-                          progress: dashboardState.progress,
-                        ),
-                        const SizedBox(height: 24),
-                        const _StartWalkingButton(key: ValueKey('start_button')),
-                        const SizedBox(height: 24),
-                        const _GroupWalkingCard(key: ValueKey('group_card')),
-                        const SizedBox(height: 24),
-                        const _HealthTipCard(key: ValueKey('tip_card')),
-                        const SizedBox(height: 24),
-                        const _EmergencyCard(key: ValueKey('emergency_card')),
-                        const SizedBox(height: 40),
-                      ]),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            key: const ValueKey('weather_row'),
+                            children: [
+                              Icon(Icons.sunny, color: Theme.of(context).colorScheme.secondary, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "${weather.formattedDate} • ${weather.temperature} - ${weather.isLoading ? 'Buscando clima...' : 'Ótimo para caminhar'}",
+                                  style: TextStyle(
+                                    fontSize: 16, 
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          _BalanceCard(
+                            key: const ValueKey('balance_card'),
+                            coins: dashboardState.progress.coins,
+                          ),
+                          const SizedBox(height: 24),
+                          _ProgressCard(
+                            key: const ValueKey('progress_card'),
+                            progress: dashboardState.progress,
+                          ),
+                          const SizedBox(height: 24),
+                          const _StartWalkingButton(key: ValueKey('start_button')),
+                          const SizedBox(height: 24),
+                          const _GroupWalkingCard(key: ValueKey('group_card')),
+                          const SizedBox(height: 24),
+                          const _EmergencyCard(key: ValueKey('emergency_card')),
+                          const SizedBox(height: 40),
+                        ]),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, UserProgress progress) {
+  Widget _buildHeader(BuildContext context, WidgetRef ref, UserProgress progress) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: isHighContrast 
+            ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
+            : null,
+        boxShadow: !isHighContrast 
+            ? [const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))]
+            : null,
       ),
       child: Row(
         children: [
@@ -114,33 +134,51 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 Text(
                   "CaminhaJuntos",
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                  style: TextStyle(
+                    fontSize: 18, 
+                    fontWeight: FontWeight.bold, 
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
-                const Text(
+                Text(
                   "Início",
-                  style: TextStyle(fontSize: 11, color: AppTheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 11, 
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
           const SizedBox(width: 4),
-          // Coins Card Otimizado para não vazar
           Flexible(
             flex: 1,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(color: const Color(0xFFFFDCC3), borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(
+                color: isHighContrast ? Colors.yellow : const Color(0xFFFFDCC3), 
+                borderRadius: BorderRadius.circular(20),
+                border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.monetization_on, color: AppTheme.tertiaryColor, size: 16),
+                  Icon(
+                    Icons.monetization_on, 
+                    color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, 
+                    size: 16,
+                  ),
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
                       progress.coins.toString(),
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.tertiaryColor, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, 
+                        fontSize: 14,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -149,15 +187,19 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () => _triggerEmergency(context, ref),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            icon: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
+            icon: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: CircleAvatar(
                 radius: 16,
-                backgroundColor: Color(0xFFFFDAD6),
-                child: Icon(Icons.sos, color: AppTheme.errorColor, size: 18),
+                backgroundColor: isHighContrast ? Colors.red : const Color(0xFFFFDAD6),
+                child: Icon(
+                  Icons.sos, 
+                  color: isHighContrast ? Colors.white : AppTheme.errorColor, 
+                  size: 18,
+                ),
               ),
             ),
           ),
@@ -176,6 +218,25 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _triggerEmergency(BuildContext context, WidgetRef ref) {
+    final user = ref.read(userProvider);
+    if (user.emergencyContactPhone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Cadastre um contato de emergência no perfil primeiro."),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      context.go('/profile');
+      return;
+    }
+    
+    context.push('/emergency', extra: {
+      'name': user.emergencyContactName,
+      'phone': user.emergencyContactPhone,
+    });
+  }
 }
 
 class _BalanceCard extends StatelessWidget {
@@ -184,12 +245,17 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+        boxShadow: !isHighContrast 
+            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]
+            : null,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -200,16 +266,38 @@ class _BalanceCard extends StatelessWidget {
                 Container(
                   width: 52,
                   height: 52,
-                  decoration: const BoxDecoration(color: Color(0xFFFFDCC3), shape: BoxShape.circle),
-                  child: const Icon(Icons.monetization_on, color: AppTheme.tertiaryColor, size: 28),
+                  decoration: BoxDecoration(
+                    color: isHighContrast ? Colors.yellow : const Color(0xFFFFDCC3), 
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.monetization_on, 
+                    color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, 
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Saldo Acumulado", style: TextStyle(fontSize: 15), overflow: TextOverflow.ellipsis),
-                      Text("$coins Moedas", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.tertiaryColor), overflow: TextOverflow.ellipsis),
+                      Text(
+                        "Saldo Acumulado", 
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: isHighContrast ? FontWeight.bold : FontWeight.normal,
+                        ), 
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        "$coins Moedas", 
+                        style: TextStyle(
+                          fontSize: 22, 
+                          fontWeight: FontWeight.bold, 
+                          color: isHighContrast ? Colors.yellow : AppTheme.tertiaryColor,
+                        ), 
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
@@ -220,8 +308,8 @@ class _BalanceCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () => context.push('/store'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.secondaryContainer,
-              foregroundColor: AppTheme.secondaryColor,
+              backgroundColor: isHighContrast ? Colors.white : AppTheme.secondaryContainer,
+              foregroundColor: isHighContrast ? Colors.black : AppTheme.secondaryColor,
               minimumSize: const Size(80, 44),
               padding: const EdgeInsets.symmetric(horizontal: 12),
               elevation: 0,
@@ -240,12 +328,17 @@ class _ProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+        boxShadow: !isHighContrast 
+            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]
+            : null,
       ),
       child: Column(
         children: [
@@ -259,31 +352,6 @@ class _ProgressCard extends StatelessWidget {
             distance: progress.distanceKm,
             duration: progress.durationMinutes,
             calories: progress.calories,
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: const Color(0xFFFFDCC3).withValues(alpha: 0.4), borderRadius: BorderRadius.circular(12)),
-            child: Row(
-              children: [
-                const Icon(Icons.stars, color: AppTheme.tertiaryContainer, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        const TextSpan(text: "Faltam só "),
-                        TextSpan(text: "${progress.remainingSteps} passos", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const TextSpan(text: " para ganhar "),
-                        const TextSpan(text: "+50 moedas", style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.tertiaryColor)),
-                        const TextSpan(text: " hoje! Você consegue!"),
-                      ],
-                    ),
-                    style: const TextStyle(fontSize: 16, height: 1.4),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -303,6 +371,8 @@ class _StartWalkingButtonState extends State<_StartWalkingButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return ElevatedButton(
       onPressed: _isNavigating
           ? null
@@ -315,9 +385,13 @@ class _StartWalkingButtonState extends State<_StartWalkingButton> {
               }
             },
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppTheme.primaryContainer,
+        backgroundColor: isHighContrast ? Colors.yellow : AppTheme.primaryContainer,
+        foregroundColor: isHighContrast ? Colors.black : Colors.white,
         minimumSize: const Size(double.infinity, 72),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: isHighContrast ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -327,7 +401,11 @@ class _StartWalkingButtonState extends State<_StartWalkingButton> {
           Flexible(
             child: Text(
               "INICIAR CAMINHADA",
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 22, 
+                fontWeight: FontWeight.w900,
+                color: isHighContrast ? Colors.black : Colors.white,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -341,12 +419,17 @@ class _GroupWalkingCard extends StatelessWidget {
   const _GroupWalkingCard({super.key});
   @override
   Widget build(BuildContext context) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+        boxShadow: !isHighContrast 
+            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,7 +448,11 @@ class _GroupWalkingCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 "16:30",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold, 
+                  color: isHighContrast ? Colors.yellow : AppTheme.primaryColor,
+                ),
               ),
             ],
           ),
@@ -384,17 +471,40 @@ class _GroupWalkingCard extends StatelessWidget {
                   height: 160,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent]),
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter, 
+                      end: Alignment.topCenter, 
+                      colors: [
+                        isHighContrast ? Colors.black.withValues(alpha: 0.9) : Colors.black.withValues(alpha: 0.7), 
+                        Colors.transparent,
+                      ],
+                    ),
                   ),
                 ),
-                const Positioned(
+                Positioned(
                   bottom: 12,
                   left: 12,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Praça das Flores • Turma das 16h30", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                      Text("7 vizinhos já confirmaram presença!", style: TextStyle(color: Colors.white70, fontSize: 16)),
+                      Text(
+                        "Praça das Flores • Turma das 16h30", 
+                        style: TextStyle(
+                          color: Colors.white, 
+                          fontWeight: FontWeight.bold, 
+                          fontSize: 18,
+                          backgroundColor: isHighContrast ? Colors.black : Colors.transparent,
+                        ),
+                      ),
+                      Text(
+                        "7 vizinhos já confirmaram presença!", 
+                        style: TextStyle(
+                          color: isHighContrast ? Colors.yellow : Colors.white70, 
+                          fontSize: 16,
+                          fontWeight: isHighContrast ? FontWeight.bold : FontWeight.normal,
+                          backgroundColor: isHighContrast ? Colors.black : Colors.transparent,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -407,106 +517,98 @@ class _GroupWalkingCard extends StatelessWidget {
   }
 }
 
-class _HealthTipCard extends StatelessWidget {
-  const _HealthTipCard({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: const Color(0xFFF1F3FF), borderRadius: BorderRadius.circular(16)),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(color: AppTheme.secondaryContainer, shape: BoxShape.circle),
-            child: const Icon(Icons.water_drop, color: AppTheme.secondaryColor, size: 28),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Dica de Saúde do Dia", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                SizedBox(height: 4),
-                Text("Beba água antes e durante seu passeio! 💧 Levar uma garrafinha garante mais energia.", style: TextStyle(fontSize: 16, height: 1.4)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmergencyCard extends StatelessWidget {
+class _EmergencyCard extends ConsumerWidget {
   const _EmergencyCard({super.key});
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.errorColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFDAD6)),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Se houver pouco espaço horizontal, empilha o botão abaixo do texto
-          if (constraints.maxWidth < 320) {
-            return Column(
-              children: [
-                _buildContent(),
-                const SizedBox(height: 16),
-                _buildButton(fullWidth: true),
-              ],
-            );
-          }
-          return Row(
-            children: [
-              Expanded(child: _buildContent()),
-              const SizedBox(width: 8),
-              _buildButton(fullWidth: false),
-            ],
-          );
-        },
-      ),
-    );
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    final user = ref.watch(userProvider);
 
-  Widget _buildContent() {
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: const BoxDecoration(color: AppTheme.errorColor, shape: BoxShape.circle),
-          child: const Icon(Icons.call, color: Colors.white, size: 24),
-        ),
-        const SizedBox(width: 12),
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Emergência", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-              Text("Apoio imediato", style: TextStyle(fontSize: 14, color: AppTheme.onSurfaceVariant)),
-            ],
+    return Speakable(
+      text: "Central de ajuda. Botão para ligar para seu contato seguro em caso de necessidade.",
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: isHighContrast ? null : const LinearGradient(
+            colors: [Color(0xFFFF8A80), AppTheme.errorColor],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          color: isHighContrast ? Colors.red : null,
+          borderRadius: BorderRadius.circular(20),
+          border: isHighContrast ? Border.all(color: Colors.white, width: 3) : null,
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.errorColor.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            )
+          ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildButton({required bool fullWidth}) {
-    return ElevatedButton.icon(
-      onPressed: () {},
-      icon: const Icon(Icons.sos, size: 20),
-      label: const Text("Ligar SOS"),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppTheme.errorColor,
-        foregroundColor: Colors.white,
-        minimumSize: Size(fullWidth ? double.infinity : 0, 48),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.emergency_share, color: Colors.white, size: 32),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "CENTRAL DE AJUDA",
+                        style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.1),
+                      ),
+                      Text(
+                        "Precisa de auxílio?",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                if (user.emergencyContactPhone.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Cadastre um contato no perfil primeiro."),
+                      backgroundColor: Colors.black,
+                    ),
+                  );
+                  return;
+                }
+                context.push('/emergency', extra: {
+                  'name': user.emergencyContactName,
+                  'phone': user.emergencyContactPhone,
+                });
+              },
+              icon: const Icon(Icons.phone_in_talk, size: 28),
+              label: const Text("LIGAR PARA CONTATO SEGURO"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppTheme.errorColor,
+                minimumSize: const Size(double.infinity, 64),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: isHighContrast ? const BorderSide(color: Colors.white, width: 2) : BorderSide.none,
+                ),
+                elevation: 0,
+                textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
