@@ -239,10 +239,12 @@ class _FilterTab extends StatelessWidget {
         child: Container(
           height: 52,
           alignment: Alignment.center,
-          decoration: isSelected ? BoxDecoration(
-            color: isHighContrast ? Colors.yellow : AppTheme.primaryContainer, 
+          decoration: BoxDecoration(
+            color: isSelected 
+                ? (isHighContrast ? Colors.yellow : AppTheme.primaryContainer) 
+                : null,
             borderRadius: BorderRadius.circular(12),
-          ) : null,
+          ),
           child: Text(
             label, 
             style: TextStyle(
