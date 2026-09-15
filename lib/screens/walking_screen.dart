@@ -2,6 +2,7 @@ import 'package:caminhandojuntos/providers/tracking_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/models/tracking_state.dart';
 import 'package:caminhandojuntos/widgets/speakable_widget.dart';
+import 'package:caminhandojuntos/widgets/compass_arrow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -266,10 +267,10 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
             isHighContrast: isHighContrast,
           ),
           _MetricCard(
-            icon: Icons.gps_fixed,
-            label: "Pontos",
-            value: tracking.rawPath.length.toString(),
-            subValue: "coletados",
+            iconWidget: const CompassArrow(size: 20), // Bússola Integrada
+            label: "Direção",
+            value: "BÚSSOLA",
+            subValue: "orientação",
             isHighContrast: isHighContrast,
           ),
           _MetricCard(
@@ -392,7 +393,8 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
 }
 
 class _MetricCard extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final Widget? iconWidget; // Permite passar o CompassArrow
   final String label;
   final String value;
   final String? unit;
@@ -400,7 +402,8 @@ class _MetricCard extends StatelessWidget {
   final bool isHighContrast;
 
   const _MetricCard({
-    required this.icon, 
+    this.icon, 
+    this.iconWidget,
     required this.label, 
     required this.value, 
     this.unit, 
@@ -413,55 +416,56 @@ class _MetricCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isHighContrast ? Colors.black : Colors.white, 
+        color: isHighContrast ? Colors.black : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min, // ✅ evita overflow vertical
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 20, color: isHighContrast ? Colors.yellow : null), 
-              const SizedBox(width: 4), 
-              Expanded(
-                child: Text(
-                  label, 
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isHighContrast ? Colors.white : null,
-                    fontWeight: isHighContrast ? FontWeight.bold : null,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              Flexible(
-                child: Text(
-                  value, 
-                  style: TextStyle(
-                    fontSize: 24, 
-                    fontWeight: FontWeight.bold,
+              // Ícone ou Bússola Integrada
+              iconWidget ?? 
+                  Icon(
+                    icon, 
+                    size: 26, 
                     color: isHighContrast ? Colors.yellow : null,
                   ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                        color: isHighContrast ? Colors.white : null,
+                      ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (unit != null) Text(unit!, style: TextStyle(fontSize: 14, color: isHighContrast ? Colors.white : null)),
             ],
           ),
-          Text(
-            subValue, 
-            style: TextStyle(
-              fontSize: 11, 
-              color: isHighContrast ? Colors.white70 : Colors.grey,
+          const SizedBox(height: 2),
+          Flexible(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: isHighContrast ? Colors.yellow : Colors.blueAccent,
+                    fontWeight: FontWeight.w900,
+                  ),
+              overflow: TextOverflow.ellipsis,
             ),
-            overflow: TextOverflow.ellipsis,
           ),
+          if (subValue.isNotEmpty && !isHighContrast)
+            Text(
+              subValue,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+              overflow: TextOverflow.ellipsis,
+            ),
         ],
       ),
     );
