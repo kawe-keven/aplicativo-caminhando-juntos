@@ -1,20 +1,25 @@
 import 'dart:async';
 import 'package:caminhandojuntos/models/coordinate_model.dart';
 import 'package:caminhandojuntos/models/tracking_state.dart';
+import 'package:caminhandojuntos/services/caminhada_service.dart';
 import 'package:caminhandojuntos/services/logger_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
+final caminhadaServiceProvider = Provider((ref) => CaminhadaService());
+
 final trackingProvider = StateNotifierProvider<TrackingNotifier, TrackingState>((ref) {
-  return TrackingNotifier();
+  final service = ref.watch(caminhadaServiceProvider);
+  return TrackingNotifier(service);
 });
 
 class TrackingNotifier extends StateNotifier<TrackingState> {
+  final CaminhadaService _service;
   StreamSubscription<Position>? _positionSubscription;
   Timer? _timer;
 
-  TrackingNotifier() : super(TrackingState());
+  TrackingNotifier(this._service) : super(TrackingState());
 
   Future<void> startTracking() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -87,25 +92,17 @@ class TrackingNotifier extends StateNotifier<TrackingState> {
         'totalDurationSeconds': state.duration.inSeconds,
       };
 
-      final response = await _mockSyncApi(payload);
+      final response = await _service.syncCaminhada(payload);
 
       state = state.copyWith(
         status: TrackingStatus.finished,
         validatedDistanceKm: response['distanceKm'],
-        validatedCoins: response['coins'],
+        validatedCoins: response['coinsEarned'],
       );
     } catch (e) {
       AppLogger.e('Erro ao sincronizar com backend', e);
       state = state.copyWith(status: TrackingStatus.paused);
     }
-  }
-
-  Future<Map<String, dynamic>> _mockSyncApi(Map<String, dynamic> data) async {
-    await Future.delayed(const Duration(seconds: 2));
-    return {
-      'distanceKm': 1.5,
-      'coins': 15,
-    };
   }
 
   void pauseTracking() => state = state.copyWith(status: TrackingStatus.paused);

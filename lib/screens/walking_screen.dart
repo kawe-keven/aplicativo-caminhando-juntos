@@ -7,6 +7,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class WalkingScreen extends ConsumerStatefulWidget {
   const WalkingScreen({super.key});
@@ -195,6 +196,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.example.caminhandojuntos',
+              maxZoom: 19,
               tileBuilder: isHighContrast ? (context, tileWidget, tile) {
                 return ColorFiltered(
                   colorFilter: const ColorFilter.matrix([
@@ -206,6 +208,14 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                   child: tileWidget,
                 );
               } : null,
+            ),
+            RichAttributionWidget(
+              attributions: [
+                TextSourceAttribution(
+                  '© OpenStreetMap contributors',
+                  onTap: () => launchUrl(Uri.parse('https://openstreetmap.org/copyright')),
+                ),
+              ],
             ),
             if (tracking.mapPath.isNotEmpty)
               PolylineLayer(
