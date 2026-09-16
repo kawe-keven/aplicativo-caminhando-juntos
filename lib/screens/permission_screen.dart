@@ -4,13 +4,50 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class PermissionScreen extends StatelessWidget {
+/// Tela unificada de permissões. 
+/// Garante que Localização (Rastreamento) e Telefone (SOS) sejam solicitados antes do uso.
+class PermissionScreen extends StatefulWidget {
   const PermissionScreen({super.key});
+
+  @override
+  State<PermissionScreen> createState() => _PermissionScreenState();
+}
+
+class _PermissionScreenState extends State<PermissionScreen> {
+  bool _isLoading = false;
+
+  Future<void> _requestPermissions() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      // Solicita Localização e Telefone simultaneamente
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.location,
+        Permission.phone,
+      ].request();
+
+      final locStatus = statuses[Permission.location];
+      
+      if (locStatus != null && locStatus.isGranted) {
+        if (mounted) context.pushReplacement('/walking');
+      } else if (locStatus != null && locStatus.isPermanentlyDenied) {
+        openAppSettings();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("A localização é obrigatória para iniciar a caminhada.")),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -20,40 +57,36 @@ class PermissionScreen extends StatelessWidget {
               Container(
                 width: 120,
                 height: 120,
-                decoration: const BoxDecoration(
-                  color: AppTheme.primaryContainer,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.location_on,
+                  Icons.security,
                   size: 64,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 32),
               Text(
-                "Precisamos ver seu caminho",
+                "Sua segurança em primeiro lugar",
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineLarge,
               ),
               const SizedBox(height: 16),
-              Text(
-                "Para contar seus passos corretamente e garantir sua segurança durante a caminhada, precisamos acessar sua localização.",
+              const Text(
+                "Para registrar sua caminhada e permitir chamadas de emergência rápidas, precisamos de permissão para Localização e Telefone.",
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
+                style: TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 32),
-              BotaoGrandeWidget(
-                text: "Entendi, permitir",
-                onPressed: () async {
-                  final status = await Permission.location.request();
-                  if (status.isGranted) {
-                    if (context.mounted) context.pushReplacement('/walking');
-                  } else if (status.isPermanentlyDenied) {
-                    openAppSettings();
-                  }
-                },
-              ),
+              if (_isLoading)
+                const CircularProgressIndicator()
+              else
+                BotaoGrandeWidget(
+                  text: "Concordo, permitir",
+                  onPressed: _requestPermissions,
+                ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => context.pop(),

@@ -1,30 +1,22 @@
 import 'package:flutter/foundation.dart';
 
-/// Serviço de log centralizado para garantir que dados sensíveis não vazem em produção.
+/// Serviço de log centralizado. 
 class AppLogger {
-  /// Registra uma mensagem técnica apenas em modo debug.
   static void d(String message) {
     if (kDebugMode) {
-      // ignore: avoid_print
-      print('[DEBUG] $message');
+      debugPrint('[DEBUG] $message');
     }
   }
 
-  /// Registra um erro apenas em modo debug.
+  /// REGRA: Nunca engolir erros. Em release, usar debugPrint para rastreio básico
+  /// ou integrar com ferramentas como Sentry/Firebase Crashlytics.
   static void e(String message, [dynamic error, StackTrace? stack]) {
-    if (kDebugMode) {
-      // ignore: avoid_print
-      print('[ERROR] $message');
-      if (error != null) {
-        // ignore: avoid_print
-        print('Caused by: $error');
-      }
-      if (stack != null) {
-        // ignore: avoid_print
-        print('Stacktrace: $stack');
-      }
+    debugPrint('[ERROR] $message');
+    if (error != null) {
+      debugPrint('Caused by: $error');
+    }
+    if (stack != null) {
+      debugPrint('Stacktrace: $stack');
     }
   }
-
-  /// REGRA DE SEGURANÇA: Nunca logue variáveis que contenham dados de perfil do usuário.
 }

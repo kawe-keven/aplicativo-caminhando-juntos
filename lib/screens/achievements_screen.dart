@@ -90,19 +90,19 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                           _ProgressOverview(unlocked: unlockedCount, total: totalCount, progress: overallProgress),
                           const SizedBox(height: 24),
                           GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 0.6,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                            ),
-                            itemCount: achievements.length,
-                            itemBuilder: (context, index) {
-                              return AchievementCardWidget(achievement: achievements[index]);
-                            },
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                            childAspectRatio: 0.7, 
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
                           ),
+                          itemCount: achievements.length,
+                          itemBuilder: (context, index) {
+                            return AchievementCardWidget(achievement: achievements[index]);
+                          },
+                        ),
                         ],
                       ),
                     ),

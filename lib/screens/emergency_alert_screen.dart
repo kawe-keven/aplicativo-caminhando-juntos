@@ -60,6 +60,8 @@ class _EmergencyAlertScreenState extends State<EmergencyAlertScreen>
     }
 
     // 2. Iniciar Ligação Direta (Android)
+    // ESCOLHA TÉCNICA: Usamos Direct Caller como primário para ganhar tempo em emergência (visto que a permissão
+    // já foi solicitada no cadastro). Se falhar, o fallback é o discador padrão (launchUrl) para garantir a chamada.
     try {
       final bool? res = await FlutterPhoneDirectCaller.callNumber(widget.contactPhone);
       

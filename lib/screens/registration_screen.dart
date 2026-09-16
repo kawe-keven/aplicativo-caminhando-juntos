@@ -176,15 +176,11 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     if (_formKey.currentState!.validate()) {
                       setState(() => _isSuccess = true);
                       
-                      // Requisito 4: Salvar o usuário localmente antes de navegar
                       await notifier.completeRegistration();
-                      if (!context.mounted) return;
+                      if (!mounted) return;
                       
-                      final router = GoRouter.of(context);
-                      Future.delayed(const Duration(seconds: 1), () {
-                        if (!mounted) return;
-                        router.go('/dashboard');
-                      });
+                      // REGRA: Usar context.go direto e evitar timeouts desnecessários que podem ocorrer após unmount
+                      context.go('/dashboard');
                     }
                   },
                 ),

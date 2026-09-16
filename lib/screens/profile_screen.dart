@@ -10,68 +10,11 @@ class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   void _showEditContactModal(BuildContext context, WidgetRef ref) {
-    final user = ref.read(userProvider);
-    final nameController = TextEditingController(text: user.emergencyContactName);
-    final phoneController = TextEditingController(text: user.emergencyContactPhone);
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => Padding(
-        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Editar Contato Seguro", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text("Nome do Familiar de Confiança:", style: TextStyle(fontSize: 16, color: AppTheme.onSurfaceVariant)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFF1F3FF),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text("Número com DDD:", style: TextStyle(fontSize: 16, color: AppTheme.onSurfaceVariant)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFF1F3FF),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                ref.read(userProvider.notifier).updateEmergencyContactName(nameController.text);
-                ref.read(userProvider.notifier).updateEmergencyContactPhone(phoneController.text);
-                ref.read(userProvider.notifier).updateUser();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Contato salvo com sucesso!")));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                minimumSize: const Size(double.infinity, 64),
-              ),
-              child: const Text("Salvar Contato"),
-            ),
-          ],
-        ),
-      ),
+      builder: (context) => _EditContactModal(ref: ref),
     );
   }
 
@@ -81,12 +24,10 @@ class ProfileScreen extends ConsumerWidget {
     final dashboardState = ref.watch(dashboardProvider);
 
     return Material(
-      color: AppTheme.backgroundColor,
+      color: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
-          // Cabeçalho Customizado
           _buildHeader(context),
-          
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
@@ -114,10 +55,96 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
+      ),
       child: const Row(
         children: [
           Text("Perfil", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
+class _EditContactModal extends StatefulWidget {
+  final WidgetRef ref;
+  const _EditContactModal({required this.ref});
+
+  @override
+  State<_EditContactModal> createState() => _EditContactModalState();
+}
+
+class _EditContactModalState extends State<_EditContactModal> {
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = widget.ref.read(userProvider);
+    _nameController = TextEditingController(text: user.emergencyContactName);
+    _phoneController = TextEditingController(text: user.emergencyContactPhone);
+  }
+
+  @override
+  void dispose() {
+    // REGRA: Descarte obrigatório de controllers
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Editar Contato Seguro", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text("Nome do Familiar de Confiança:", style: TextStyle(fontSize: 16, color: AppTheme.onSurfaceVariant)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFFF1F3FF),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text("Número com DDD:", style: TextStyle(fontSize: 16, color: AppTheme.onSurfaceVariant)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFFF1F3FF),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              widget.ref.read(userProvider.notifier).updateEmergencyContactName(_nameController.text);
+              widget.ref.read(userProvider.notifier).updateEmergencyContactPhone(_phoneController.text);
+              widget.ref.read(userProvider.notifier).updateUser();
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Contato salvo com sucesso!")));
+            },
+            child: const Text("Salvar Contato"),
+          ),
         ],
       ),
     );

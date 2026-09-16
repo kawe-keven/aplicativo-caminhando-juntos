@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Serviço de armazenamento seguro para dados sensíveis.
-/// Utiliza Keystore no Android e Keychain no iOS para criptografia de hardware.
 class SecureStorageService {
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(
@@ -10,51 +9,52 @@ class SecureStorageService {
     ),
   );
 
-  /// Salva um valor associado a uma chave de forma criptografada.
+  // Lista de chaves conhecidas para evitar apagar dados de outros contextos/plugins
+  static const List<String> _knownKeys = [
+    'auth_token',
+    'refresh_token',
+    'user_id',
+    'emergency_contact_phone',
+  ];
+
   Future<void> write(String key, String value) async {
     try {
       await _storage.write(key: key, value: value);
-      _secureLog('SecureStorage: Gravado com sucesso - Chave: $key');
     } catch (e) {
       _secureLog('SecureStorage Error (Write): $e');
       rethrow;
     }
   }
 
-  /// Lê um valor criptografado associado a uma chave.
   Future<String?> read(String key) async {
     try {
-      final value = await _storage.read(key: key);
-      _secureLog('SecureStorage: Leitura concluída - Chave: $key');
-      return value;
+      return await _storage.read(key: key);
     } catch (e) {
       _secureLog('SecureStorage Error (Read): $e');
       return null;
     }
   }
 
-  /// Remove um valor associado a uma chave.
   Future<void> delete(String key) async {
     try {
       await _storage.delete(key: key);
-      _secureLog('SecureStorage: Deletado com sucesso - Chave: $key');
     } catch (e) {
       _secureLog('SecureStorage Error (Delete): $e');
     }
   }
 
-  /// Limpa todo o armazenamento seguro.
-  Future<void> deleteAll() async {
+  /// REGRA: Substitui deleteAll por exclusão seletiva
+  Future<void> clearKnownData() async {
     try {
-      await _storage.deleteAll();
-      _secureLog('SecureStorage: Todo o cache seguro foi limpo.');
+      for (final key in _knownKeys) {
+        await _storage.delete(key: key);
+      }
+      _secureLog('SecureStorage: Dados conhecidos foram limpos.');
     } catch (e) {
-      _secureLog('SecureStorage Error (DeleteAll): $e');
+      _secureLog('SecureStorage Error (ClearKnownData): $e');
     }
   }
 
-  /// REGRA DE SEGURANÇA: Logs apenas em modo de desenvolvimento.
-  /// Nunca expõe dados reais nos logs.
   void _secureLog(String message) {
     if (kDebugMode) {
       // ignore: avoid_print

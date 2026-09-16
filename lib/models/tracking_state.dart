@@ -1,11 +1,13 @@
 import 'package:caminhandojuntos/models/coordinate_model.dart';
 import 'package:latlong2/latlong.dart';
 
-enum TrackingStatus { initial, tracking, paused, finished, syncing }
+/// Status do rastreamento tipado para tratamento de erros e estados da UI.
+enum TrackingStatus { initial, tracking, paused, finished, syncing, error }
 
 class TrackingState {
   final TrackingStatus status;
   final List<CoordinateModel> rawPath;
+  final List<LatLng> mapPath; // Pontos simplificados para visualização
   final Duration duration;
   final LatLng? currentPosition;
   
@@ -13,33 +15,39 @@ class TrackingState {
   final double validatedDistanceKm;
   final int validatedCoins;
 
+  // Mensagem de erro amigável para o usuário idoso
+  final String? errorMessage;
+
   TrackingState({
     this.status = TrackingStatus.initial,
     this.rawPath = const [],
+    this.mapPath = const [],
     this.duration = Duration.zero,
     this.currentPosition,
     this.validatedDistanceKm = 0.0,
     this.validatedCoins = 0,
+    this.errorMessage,
   });
-
-  // Auxiliar para o mapa continuar desenhando a linha
-  List<LatLng> get mapPath => rawPath.map((c) => LatLng(c.latitude, c.longitude)).toList();
 
   TrackingState copyWith({
     TrackingStatus? status,
     List<CoordinateModel>? rawPath,
+    List<LatLng>? mapPath,
     Duration? duration,
     LatLng? currentPosition,
     double? validatedDistanceKm,
     int? validatedCoins,
+    String? errorMessage,
   }) {
     return TrackingState(
       status: status ?? this.status,
       rawPath: rawPath ?? this.rawPath,
+      mapPath: mapPath ?? this.mapPath,
       duration: duration ?? this.duration,
       currentPosition: currentPosition ?? this.currentPosition,
       validatedDistanceKm: validatedDistanceKm ?? this.validatedDistanceKm,
       validatedCoins: validatedCoins ?? this.validatedCoins,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }

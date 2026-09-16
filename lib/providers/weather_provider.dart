@@ -14,7 +14,7 @@ class WeatherState {
 
   WeatherState({
     required this.formattedDate,
-    this.temperature = '--',
+    this.temperature = 'Clima indisponível',
     this.isLoading = false,
   });
 
@@ -47,7 +47,6 @@ class WeatherNotifier extends StateNotifier<WeatherState> {
 
   static String _getFormattedDate() {
     final now = DateTime.now();
-    // Exemplo: "Segunda-feira, 8 de setembro"
     return DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(now);
   }
 
@@ -55,7 +54,6 @@ class WeatherNotifier extends StateNotifier<WeatherState> {
     _updateDate();
     _fetchWeather();
     
-    // Timer to update date (every minute to catch midnight)
     _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
       final newDate = _getFormattedDate();
       if (newDate != state.formattedDate) {
@@ -74,7 +72,6 @@ class WeatherNotifier extends StateNotifier<WeatherState> {
     try {
       Position? position;
       
-      // Check permissions
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
         position = await Geolocator.getCurrentPosition(
@@ -83,7 +80,6 @@ class WeatherNotifier extends StateNotifier<WeatherState> {
         );
       }
 
-      // Default location (São Paulo) if GPS fails or denied
       double lat = position?.latitude ?? -23.5505;
       double lon = position?.longitude ?? -46.6333;
 
@@ -95,11 +91,12 @@ class WeatherNotifier extends StateNotifier<WeatherState> {
           isLoading: false,
         );
       } else {
-        state = state.copyWith(isLoading: false);
+        // REGRA: Fallback amigável para temperatura falhando
+        state = state.copyWith(temperature: 'Clima indisponível', isLoading: false);
       }
     } catch (e) {
       debugPrint('Weather Provider Error: $e');
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(temperature: 'Clima indisponível', isLoading: false);
     }
   }
 

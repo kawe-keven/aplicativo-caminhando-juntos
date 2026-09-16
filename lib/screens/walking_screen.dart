@@ -5,6 +5,7 @@ import 'package:caminhandojuntos/widgets/speakable_widget.dart';
 import 'package:caminhandojuntos/widgets/compass_arrow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +20,7 @@ class WalkingScreen extends ConsumerStatefulWidget {
 
 class _WalkingScreenState extends ConsumerState<WalkingScreen> {
   final MapController _mapController = MapController();
+  ProviderSubscription? _trackingSubscription;
   
   @override
   void initState() {
@@ -26,6 +28,24 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(trackingProvider.notifier).startTracking();
     });
+
+    // REGRA: Escuta manual para evitar rebuilds e garantir MapController pronto
+    _trackingSubscription = ref.listenManual(
+      trackingProvider.select((s) => s.currentPosition),
+      (previous, next) {
+        if (next != null && previous != next) {
+          _mapController.move(next, _mapController.camera.zoom);
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    // REGRA: Limpeza obrigatória de recursos nativos e subscriptions
+    _trackingSubscription?.close();
+    _mapController.dispose();
+    super.dispose();
   }
 
   String _formatDuration(Duration duration) {
@@ -37,18 +57,8 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tracking = ref.watch(trackingProvider);
-    final notifier = ref.read(trackingProvider.notifier);
+    final trackingStatus = ref.watch(trackingProvider.select((s) => s.status));
     final isHighContrast = Theme.of(context).brightness == Brightness.dark;
-
-    // Requisito: Mover a câmera conforme a posição REAL muda
-    ref.listen(trackingProvider, (previous, next) {
-      if (next.currentPosition != null) {
-        if (previous?.currentPosition != next.currentPosition) {
-          _mapController.move(next.currentPosition!, _mapController.camera.zoom);
-        }
-      }
-    });
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -58,7 +68,11 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
         toolbarHeight: 80,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary, size: 30),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            // REGRA: Resetar rastreamento ao sair da tela
+            ref.read(trackingProvider.notifier).reset();
+            context.pop();
+          },
         ),
         title: Row(
           children: [
@@ -98,25 +112,25 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
       body: SafeArea(
         child: Speakable(
           announceOnLoad: true,
-          text: "Caminhada iniciada! Coletando seus passos e localização. Mantenha o celular com você.",
+          text: "Caminhada iniciada! Coletando seus passos e localização.",
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               children: [
                 const SizedBox(height: 16),
-                _buildStatusBar(tracking.status, context),
+                _buildStatusBar(trackingStatus, context),
                 const SizedBox(height: 16),
-                _buildMap(tracking, context),
+                _buildMap(context),
                 const SizedBox(height: 16),
-                _buildLiveMetrics(tracking, context),
+                _buildLiveMetrics(context),
                 const SizedBox(height: 16),
                 _buildFeedbackCard(context),
                 const SizedBox(height: 16),
-                _buildControls(tracking, notifier, context),
+                _buildControls(trackingStatus, context),
                 const SizedBox(height: 12),
-                if (tracking.status != TrackingStatus.syncing)
+                if (trackingStatus != TrackingStatus.syncing)
                   ElevatedButton.icon(
-                    onPressed: () => _showFinishDialog(context, notifier),
+                    onPressed: () => _showFinishDialog(context),
                     icon: const Icon(Icons.stop_circle, size: 32),
                     label: const Text("FINALIZAR E VALIDAR"),
                     style: ElevatedButton.styleFrom(
@@ -129,7 +143,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                       ),
                     ),
                   ),
-                if (tracking.status == TrackingStatus.syncing)
+                if (trackingStatus == TrackingStatus.syncing)
                   const Center(child: CircularProgressIndicator()),
                 const SizedBox(height: 16),
               ],
@@ -142,30 +156,24 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
 
   Widget _buildStatusBar(TrackingStatus status, BuildContext context) {
     final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    String statusText = status == TrackingStatus.syncing ? "Sincronizando..." : "Coletando GPS...";
+    if (status == TrackingStatus.error) statusText = "Erro no rastreamento";
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
+        color: status == TrackingStatus.error ? Colors.red : Theme.of(context).colorScheme.primary,
         borderRadius: BorderRadius.circular(24),
         border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.fiber_manual_record, 
-            color: isHighContrast ? Colors.black : const Color(0xFFB1F1C5), 
-            size: 12,
-          ),
+          Icon(Icons.fiber_manual_record, color: isHighContrast ? Colors.black : const Color(0xFFB1F1C5), size: 12),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              status == TrackingStatus.syncing ? "Sincronizando com servidor..." : "Coletando coordenadas GPS...",
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary, 
-                fontWeight: FontWeight.bold, 
-                fontSize: 14,
-              ),
+              statusText,
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 14),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -174,7 +182,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     );
   }
 
-  Widget _buildMap(TrackingState tracking, BuildContext context) {
+  Widget _buildMap(BuildContext context) {
     final isHighContrast = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -189,23 +197,22 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
         borderRadius: BorderRadius.circular(16),
         child: FlutterMap(
           mapController: _mapController,
-          options: MapOptions(
-            initialCenter: tracking.currentPosition ?? const LatLng(-23.5505, -46.6333),
+          options: const MapOptions(
+            initialCenter: LatLng(-23.5505, -46.6333),
             initialZoom: 16,
           ),
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.caminhandojuntos',
+              userAgentPackageName: 'com.caminhajuntos.app', // applicationID real
               maxZoom: 19,
+              minZoom: 2,
+              tileProvider: FMTCTileProvider(
+                stores: const {'mapCache': BrowseStoreStrategy.readUpdateCreate},
+              ),
               tileBuilder: isHighContrast ? (context, tileWidget, tile) {
                 return ColorFiltered(
-                  colorFilter: const ColorFilter.matrix([
-                    -1, 0, 0, 0, 255,
-                    0, -1, 0, 0, 255,
-                    0, 0, -1, 0, 255,
-                    0, 0, 0, 1, 0,
-                  ]),
+                  colorFilter: const ColorFilter.matrix([-1,0,0,0,255,0,-1,0,0,255,0,0,-1,0,255,0,0,0,1,0]),
                   child: tileWidget,
                 );
               } : null,
@@ -218,38 +225,28 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                 ),
               ],
             ),
-            if (tracking.mapPath.isNotEmpty)
-              PolylineLayer(
-                polylines: [
-                  Polyline(
-                    points: tracking.mapPath,
-                    color: isHighContrast ? Colors.yellow : AppTheme.primaryColor,
-                    strokeWidth: 8,
-                  ),
-                ],
-              ),
-            if (tracking.currentPosition != null)
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: tracking.currentPosition!,
-                    width: 60,
-                    height: 60,
-                    child: Icon(
-                      Icons.directions_walk, 
-                      color: isHighContrast ? Colors.cyanAccent : AppTheme.primaryColor, 
-                      size: 40,
-                    ),
-                  ),
-                ],
-              ),
+            // REGRA: Isolar camadas para reduzir rebuilds
+            Consumer(builder: (context, ref, _) {
+              final path = ref.watch(trackingProvider.select((s) => s.mapPath));
+              if (path.isEmpty) return const SizedBox.shrink();
+              return PolylineLayer(
+                polylines: [Polyline(points: path, color: isHighContrast ? Colors.yellow : AppTheme.primaryColor, strokeWidth: 8)],
+              );
+            }),
+            Consumer(builder: (context, ref, _) {
+              final pos = ref.watch(trackingProvider.select((s) => s.currentPosition));
+              if (pos == null) return const SizedBox.shrink();
+              return MarkerLayer(
+                markers: [Marker(point: pos, width: 60, height: 60, child: Icon(Icons.directions_walk, color: isHighContrast ? Colors.cyanAccent : AppTheme.primaryColor, size: 40))],
+              );
+            }),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLiveMetrics(TrackingState tracking, BuildContext context) {
+  Widget _buildLiveMetrics(BuildContext context) {
     final isHighContrast = Theme.of(context).brightness == Brightness.dark;
 
     return Expanded(
@@ -259,36 +256,13 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         children: [
-          _MetricCard(
-            icon: Icons.timer,
-            label: "Tempo",
-            value: _formatDuration(tracking.duration),
-            subValue: "decorrido",
-            isHighContrast: isHighContrast,
-          ),
-          _MetricCard(
-            iconWidget: const CompassArrow(size: 20), // Bússola Integrada
-            label: "Direção",
-            value: "BÚSSOLA",
-            subValue: "orientação",
-            isHighContrast: isHighContrast,
-          ),
-          _MetricCard(
-            icon: Icons.straighten,
-            label: "Distância",
-            value: "--",
-            unit: "km",
-            subValue: "aguardando server",
-            isHighContrast: isHighContrast,
-          ),
-          _MetricCard(
-            icon: Icons.monetization_on,
-            label: "Moedas",
-            value: "--",
-            unit: "🪙",
-            subValue: "aguardando server",
-            isHighContrast: isHighContrast,
-          ),
+          Consumer(builder: (context, ref, _) {
+            final duration = ref.watch(trackingProvider.select((s) => s.duration));
+            return _MetricCard(icon: Icons.timer, label: "Tempo", value: _formatDuration(duration), subValue: "decorrido", isHighContrast: isHighContrast);
+          }),
+          _MetricCard(iconWidget: const CompassArrow(size: 20), label: "Direção", value: "BÚSSOLA", subValue: "orientação", isHighContrast: isHighContrast),
+          const _MetricCard(icon: Icons.straighten, label: "Distância", value: "--", unit: "km", subValue: "aguardando server", isHighContrast: false),
+          const _MetricCard(icon: Icons.monetization_on, label: "Moedas", value: "--", unit: "🪙", subValue: "aguardando server", isHighContrast: false),
         ],
       ),
     );
@@ -296,30 +270,23 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
 
   Widget _buildFeedbackCard(BuildContext context) {
     final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    final error = ref.watch(trackingProvider.select((s) => s.errorMessage));
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isHighContrast ? Colors.black : const Color(0xFFF1F3FF), 
+        color: error != null ? Colors.red.withValues(alpha: 0.1) : (isHighContrast ? Colors.black : const Color(0xFFF1F3FF)), 
         borderRadius: BorderRadius.circular(16),
-        border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+        border: Border.all(color: error != null ? Colors.red : (isHighContrast ? Colors.white : Colors.transparent), width: 2),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.security, 
-            color: isHighContrast ? Colors.yellow : AppTheme.primaryColor, 
-            size: 30,
-          ),
+          Icon(error != null ? Icons.error_outline : Icons.security, color: error != null ? Colors.red : (isHighContrast ? Colors.yellow : AppTheme.primaryColor), size: 30),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              "Seus dados estão sendo coletados e serão validados pelo servidor ao final.",
-              style: TextStyle(
-                fontSize: 14, 
-                color: isHighContrast ? Colors.white : AppTheme.onSurfaceVariant,
-                fontWeight: isHighContrast ? FontWeight.bold : FontWeight.normal,
-              ),
+              error ?? "Seus dados estão sendo coletados e serão validados pelo servidor ao final.",
+              style: TextStyle(fontSize: 14, color: error != null ? Colors.red : (isHighContrast ? Colors.white : AppTheme.onSurfaceVariant), fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -327,22 +294,17 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     );
   }
 
-  Widget _buildControls(TrackingState tracking, TrackingNotifier notifier, BuildContext context) {
+  Widget _buildControls(TrackingStatus status, BuildContext context) {
     final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    final notifier = ref.read(trackingProvider.notifier);
 
     return Row(
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () {
-              if (tracking.status == TrackingStatus.tracking) {
-                notifier.pauseTracking();
-              } else {
-                notifier.resumeTracking();
-              }
-            },
-            icon: Icon(tracking.status == TrackingStatus.paused ? Icons.play_circle : Icons.pause_circle, size: 32),
-            label: Text(tracking.status == TrackingStatus.paused ? "Retomar" : "Pausar"),
+            onPressed: () => status == TrackingStatus.tracking ? notifier.pauseTracking() : notifier.resumeTracking(),
+            icon: Icon(status == TrackingStatus.paused ? Icons.play_circle : Icons.pause_circle, size: 32),
+            label: Text(status == TrackingStatus.paused ? "Retomar" : "Pausar"),
             style: ElevatedButton.styleFrom(
               backgroundColor: isHighContrast ? Colors.black : Colors.white, 
               foregroundColor: isHighContrast ? Colors.white : AppTheme.secondaryColor, 
@@ -369,7 +331,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     );
   }
 
-  void _showFinishDialog(BuildContext context, TrackingNotifier notifier) {
+  void _showFinishDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -380,7 +342,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await notifier.finishAndSync();
+              await ref.read(trackingProvider.notifier).finishAndSync();
               if (!context.mounted) return;
               context.go('/summary');
             },
@@ -394,7 +356,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
 
 class _MetricCard extends StatelessWidget {
   final IconData? icon;
-  final Widget? iconWidget; // Permite passar o CompassArrow
+  final Widget? iconWidget;
   final String label;
   final String value;
   final String? unit;
@@ -422,28 +384,18 @@ class _MetricCard extends StatelessWidget {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min, // ✅ evita overflow vertical
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Ícone ou Bússola Integrada
-              iconWidget ?? 
-                  Icon(
-                    icon, 
-                    size: 26, 
-                    color: isHighContrast ? Colors.yellow : null,
-                  ),
+              iconWidget ?? Icon(icon, size: 26, color: isHighContrast ? Colors.yellow : null),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   label.toUpperCase(),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.1,
-                        color: isHighContrast ? Colors.white : null,
-                      ),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.1, color: isHighContrast ? Colors.white : null),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -453,19 +405,12 @@ class _MetricCard extends StatelessWidget {
           Flexible(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: isHighContrast ? Colors.yellow : Colors.blueAccent,
-                    fontWeight: FontWeight.w900,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: isHighContrast ? Colors.yellow : Colors.blueAccent, fontWeight: FontWeight.w900),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           if (subValue.isNotEmpty && !isHighContrast)
-            Text(
-              subValue,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(subValue, style: const TextStyle(fontSize: 11, color: Colors.grey), overflow: TextOverflow.ellipsis),
         ],
       ),
     );
