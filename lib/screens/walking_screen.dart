@@ -7,6 +7,7 @@ import 'package:caminhandojuntos/widgets/walking_info_panel.dart';
 import 'package:caminhandojuntos/widgets/walking_action_buttons.dart';
 import 'package:caminhandojuntos/widgets/map_credit_label.dart';
 import 'package:caminhandojuntos/providers/user_provider.dart';
+import 'package:caminhandojuntos/services/initial_location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,24 +24,13 @@ class WalkingScreen extends ConsumerStatefulWidget {
 class _WalkingScreenState extends ConsumerState<WalkingScreen> {
   final MapController _mapController = MapController();
   ProviderSubscription? _trackingSubscription;
+  LatLng? _initialMapCenter;
+  bool _isMovingToPosition = false;
   
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final isRunning = ref.read(trackingProvider).caminhadaEmAndamento;
-      if (!isRunning) {
-        ref.read(trackingProvider.notifier).startTracking();
-      } else {
-        // Se já está em andamento, centraliza no último ponto conhecido
-        final currentPos = ref.read(trackingProvider).currentPosition;
-        if (currentPos != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _mapController.move(currentPos, 16);
-          });
-        }
-      }
-    });
+    _setupInitialLocation();
 
     _trackingSubscription = ref.listenManual(
       trackingProvider.select((s) => s.currentPosition),
@@ -50,6 +40,36 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
         }
       },
     );
+  }
+
+  Future<void> _setupInitialLocation() async {
+    final isRunning = ref.read(trackingProvider).caminhadaEmAndamento;
+    if (isRunning) {
+      final currentPos = ref.read(trackingProvider).currentPosition;
+      if (currentPos != null) {
+        _initialMapCenter = currentPos;
+      }
+    } else {
+      // Tenta obter posição do serviço (com cache aquecido)
+      final pos = await ref.read(initialLocationServiceProvider).obterPosicaoInicial();
+      if (mounted) {
+        setState(() {
+          _initialMapCenter = pos;
+        });
+        // Se ainda não iniciou e temos centro, inicia tracking
+        ref.read(trackingProvider.notifier).startTracking();
+      }
+    }
+
+    // Se após 3 segundos ainda não tivermos centro, usa fallback do Brasil
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && _initialMapCenter == null) {
+        setState(() {
+          _initialMapCenter = const LatLng(-14.2350, -51.9253); // Centro do Brasil
+        });
+        ref.read(trackingProvider.notifier).startTracking();
+      }
+    });
   }
 
   @override
@@ -116,6 +136,17 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     final trackingState = ref.watch(trackingProvider);
     final isHighContrast = Theme.of(context).brightness == Brightness.dark;
 
+    if (_initialMapCenter == null) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final bool isFallbackBrazil = _initialMapCenter!.latitude == -14.2350 && _initialMapCenter!.longitude == -51.9253;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -130,27 +161,33 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
             Positioned.fill(
               child: FlutterMap(
                 mapController: _mapController,
-                options: const MapOptions(
-                  initialCenter: LatLng(-23.5505, -46.6333),
-                  initialZoom: 16,
+                options: MapOptions(
+                  initialCenter: _initialMapCenter!,
+                  initialZoom: isFallbackBrazil ? 4 : 17,
+                  onMapReady: () {
+                    // Se abrimos com o fallback do Brasil e já temos uma posição real, movemos para ela
+                    final realPos = ref.read(trackingProvider).currentPosition;
+                    if (realPos != null && isFallbackBrazil) {
+                      _mapController.move(realPos, 17);
+                    }
+                  },
                 ),
                 children: [
                   AppTileLayer.build(isHighContrast: isHighContrast),
                   Consumer(builder: (context, ref, _) {
-                    final path = ref.watch(trackingProvider.select((s) => s.mapPath));
-                    if (path.isEmpty) return const SizedBox.shrink();
-                    return PolylineLayer(
-                      polylines: [
-                        Polyline(
-                          points: path,
-                          color: isHighContrast ? Colors.yellow : AppTheme.primaryColor,
-                          strokeWidth: 8,
-                        )
-                      ],
-                    );
-                  }),
-                  Consumer(builder: (context, ref, _) {
-                    final pos = ref.watch(trackingProvider.select((s) => s.currentPosition));
+                    final trackingData = ref.watch(trackingProvider);
+                    final pos = trackingData.currentPosition;
+                    
+                    if (pos != null && !_isMovingToPosition) {
+                      // Recentra o mapa na primeira posição real se o centro inicial era aproximado ou do Brasil
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          _mapController.move(pos, 17);
+                          _isMovingToPosition = true;
+                        }
+                      });
+                    }
+                    
                     if (pos == null) return const SizedBox.shrink();
                     return MarkerLayer(
                       markers: [
@@ -163,6 +200,19 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                             color: isHighContrast ? Colors.cyanAccent : AppTheme.primaryColor,
                             size: 40,
                           ),
+                        )
+                      ],
+                    );
+                  }),
+                  Consumer(builder: (context, ref, _) {
+                    final path = ref.watch(trackingProvider.select((s) => s.mapPath));
+                    if (path.isEmpty) return const SizedBox.shrink();
+                    return PolylineLayer(
+                      polylines: [
+                        Polyline(
+                          points: path,
+                          color: isHighContrast ? Colors.yellow : AppTheme.primaryColor,
+                          strokeWidth: 8,
                         )
                       ],
                     );

@@ -2,6 +2,7 @@ import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/providers/user_provider.dart';
 import 'package:caminhandojuntos/providers/weather_provider.dart';
 import 'package:caminhandojuntos/providers/tracking_provider.dart';
+import 'package:caminhandojuntos/services/initial_location_service.dart';
 import 'package:caminhandojuntos/models/user_progress.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/dashboard_stats_grid.dart';
@@ -12,11 +13,25 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Pré-aquecimento da localização inicial em segundo plano
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(initialLocationProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final DashboardState dashboardState = ref.watch(dashboardProvider);
     final user = ref.watch(userProvider);
     final weather = ref.watch(weatherProvider);
@@ -35,7 +50,7 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             children: [
               // Cabeçalho Customizado
-              _buildHeader(context, ref, dashboardState.progress),
+              _buildHeader(context, dashboardState.progress),
               
               Expanded(
                 child: CustomScrollView(
@@ -102,7 +117,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, WidgetRef ref, UserProgress progress) {
+  Widget _buildHeader(BuildContext context, UserProgress progress) {
     final isHighContrast = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -188,7 +203,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           IconButton(
-            onPressed: () => _triggerEmergency(context, ref),
+            onPressed: () => _triggerEmergency(context),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             icon: Padding(
@@ -220,7 +235,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  void _triggerEmergency(BuildContext context, WidgetRef ref) {
+  void _triggerEmergency(BuildContext context) {
     final user = ref.read(userProvider);
     if (user.emergencyContactPhone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

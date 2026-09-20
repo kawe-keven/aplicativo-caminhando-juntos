@@ -64,11 +64,14 @@ class _StatItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, color: AppTheme.secondaryColor, size: 28),
         const SizedBox(height: 4),
         Text(
           value,
+          textAlign: TextAlign.center,
+          softWrap: true,
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -77,6 +80,8 @@ class _StatItem extends StatelessWidget {
         ),
         Text(
           label,
+          textAlign: TextAlign.center,
+          softWrap: true,
           style: const TextStyle(
             fontSize: 14,
             color: AppTheme.onSurfaceVariant,
