@@ -3,13 +3,12 @@ import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/models/tracking_state.dart';
 import 'package:caminhandojuntos/widgets/speakable_widget.dart';
 import 'package:caminhandojuntos/widgets/compass_arrow.dart';
+import 'package:caminhandojuntos/widgets/app_tile_layer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class WalkingScreen extends ConsumerStatefulWidget {
   const WalkingScreen({super.key});
@@ -202,28 +201,9 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
             initialZoom: 16,
           ),
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.caminhajuntos.app', // applicationID real
-              maxZoom: 19,
-              minZoom: 2,
-              tileProvider: FMTCTileProvider(
-                stores: const {'mapCache': BrowseStoreStrategy.readUpdateCreate},
-              ),
-              tileBuilder: isHighContrast ? (context, tileWidget, tile) {
-                return ColorFiltered(
-                  colorFilter: const ColorFilter.matrix([-1,0,0,0,255,0,-1,0,0,255,0,0,-1,0,255,0,0,0,1,0]),
-                  child: tileWidget,
-                );
-              } : null,
-            ),
+            AppTileLayer.build(isHighContrast: isHighContrast),
             RichAttributionWidget(
-              attributions: [
-                TextSourceAttribution(
-                  '© OpenStreetMap contributors',
-                  onTap: () => launchUrl(Uri.parse('https://openstreetmap.org/copyright')),
-                ),
-              ],
+              attributions: AppTileLayer.getAttributions(context),
             ),
             // REGRA: Isolar camadas para reduzir rebuilds
             Consumer(builder: (context, ref, _) {
