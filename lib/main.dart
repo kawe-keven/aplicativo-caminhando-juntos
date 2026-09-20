@@ -5,16 +5,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'dart:developer' as developer;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pt_BR', null);
   
-  // Inicializa o cache de mapas offline (FMTC 10.x)
-  await const FMTCObjectBoxBackend().initialise();
-  final store = const FMTCStore('mapCache');
-  if (!(await store.manage.exists)) {
+  // Inicializa o cache de mapas offline com tratamento de erros robusto
+  try {
+    await FMTCObjectBoxBackend().initialise();
+    final store = const FMTCStore('mapCache');
     await store.manage.create();
+  } catch (e, stackTrace) {
+    developer.log(
+      'Erro ao inicializar o cache de mapas offline (FMTC)',
+      error: e,
+      stackTrace: stackTrace,
+      name: 'Initialization',
+    );
   }
 
   runApp(
@@ -41,9 +49,12 @@ class CaminhaJuntosApp extends ConsumerWidget {
           : AppTheme.lightTheme,
       routerConfig: router,
       builder: (context, child) {
+        final mediaQueryData = MediaQuery.of(context);
+        final clampedFontScale = accessibility.fontScale.clamp(1.0, 1.8);
+
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(accessibility.fontScale),
+          data: mediaQueryData.copyWith(
+            textScaler: TextScaler.linear(clampedFontScale),
           ),
           child: child ?? const Material(child: Center(child: CircularProgressIndicator())),
         );

@@ -176,11 +176,11 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     if (_formKey.currentState!.validate()) {
                       setState(() => _isSuccess = true);
                       
+                      final router = GoRouter.of(context);
                       await notifier.completeRegistration();
                       if (!mounted) return;
                       
-                      // REGRA: Usar context.go direto e evitar timeouts desnecessários que podem ocorrer após unmount
-                      context.go('/dashboard');
+                      router.go('/dashboard');
                     }
                   },
                 ),

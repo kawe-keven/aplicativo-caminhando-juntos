@@ -120,11 +120,17 @@ class AchievementCardWidget extends StatelessWidget {
                         ),
                       ),
                       if (achievement.progressText != null)
-                        Text(
-                          achievement.progressText!,
-                          style: TextStyle(
-                            fontSize: 12, 
-                            color: isHighContrast ? Colors.white70 : AppTheme.onSurfaceVariant,
+                        const SizedBox(width: 4),
+                      if (achievement.progressText != null)
+                        Flexible(
+                          child: Text(
+                            achievement.progressText!,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: 12, 
+                              color: isHighContrast ? Colors.white70 : AppTheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
                     ],
