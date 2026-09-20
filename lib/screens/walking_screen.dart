@@ -28,7 +28,18 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(trackingProvider.notifier).startTracking();
+      final isRunning = ref.read(trackingProvider).caminhadaEmAndamento;
+      if (!isRunning) {
+        ref.read(trackingProvider.notifier).startTracking();
+      } else {
+        // Se já está em andamento, centraliza no último ponto conhecido
+        final currentPos = ref.read(trackingProvider).currentPosition;
+        if (currentPos != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _mapController.move(currentPos, 16);
+          });
+        }
+      }
     });
 
     _trackingSubscription = ref.listenManual(
@@ -56,34 +67,8 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
   }
 
   void _handleBackAction() {
-    final status = ref.read(trackingProvider.select((s) => s.status));
-    if (status == TrackingStatus.tracking || status == TrackingStatus.paused) {
-      _showBackConfirmationDialog();
-    } else {
-      ref.read(trackingProvider.notifier).reset();
-      context.pop();
-    }
-  }
-
-  void _showBackConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Abandonar Caminhada?"),
-        content: const Text("Se você voltar agora, o progresso desta atividade será perdido."),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Continuar")),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(trackingProvider.notifier).reset();
-              context.pop();
-            },
-            child: const Text("Sair"),
-          ),
-        ],
-      ),
-    );
+    // Retornar à Dashboard sem resetar o estado global de rastreamento
+    context.go('/dashboard');
   }
 
   void _showFinishDialog() {

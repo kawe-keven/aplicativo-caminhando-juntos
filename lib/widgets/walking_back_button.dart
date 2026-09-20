@@ -15,7 +15,7 @@ class WalkingBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Voltar',
+      label: 'Voltar para a tela inicial',
       child: Material(
         elevation: 4,
         color: Theme.of(context).colorScheme.surface,
@@ -25,23 +25,27 @@ class WalkingBackButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           onTap: onPop,
           child: Container(
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.arrow_back,
                   color: Theme.of(context).colorScheme.primary,
                   size: 28,
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  "Voltar",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    "Voltar",
+                    softWrap: true,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ),
               ],

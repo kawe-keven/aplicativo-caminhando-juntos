@@ -50,4 +50,10 @@ class TrackingState {
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
+
+  bool get caminhadaEmAndamento =>
+      status == TrackingStatus.tracking ||
+      status == TrackingStatus.paused ||
+      status == TrackingStatus.syncing ||
+      status == TrackingStatus.error;
 }

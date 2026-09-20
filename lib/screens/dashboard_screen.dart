@@ -1,6 +1,7 @@
 import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/providers/user_provider.dart';
 import 'package:caminhandojuntos/providers/weather_provider.dart';
+import 'package:caminhandojuntos/providers/tracking_provider.dart';
 import 'package:caminhandojuntos/models/user_progress.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/dashboard_stats_grid.dart';
@@ -359,57 +360,59 @@ class _ProgressCard extends StatelessWidget {
   }
 }
 
-class _StartWalkingButton extends StatefulWidget {
+class _StartWalkingButton extends ConsumerWidget {
   const _StartWalkingButton({super.key});
 
   @override
-  State<_StartWalkingButton> createState() => _StartWalkingButtonState();
-}
-
-class _StartWalkingButtonState extends State<_StartWalkingButton> {
-  bool _isNavigating = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    final caminhadaEmAndamento = ref.watch(trackingProvider.select((s) => s.caminhadaEmAndamento));
 
-    return ElevatedButton(
-      onPressed: _isNavigating
-          ? null
-          : () async {
-              setState(() => _isNavigating = true);
-              try {
-                await context.push('/permission');
-              } finally {
-                if (mounted) setState(() => _isNavigating = false);
+    return Semantics(
+      button: true,
+      label: caminhadaEmAndamento ? "Voltar à caminhada" : "Iniciar caminhada",
+      child: Tooltip(
+        message: caminhadaEmAndamento ? "Retomar mapa da atividade ativa" : "Começar nova caminhada",
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 72),
+          child: ElevatedButton(
+            onPressed: () {
+              if (caminhadaEmAndamento) {
+                context.go('/walking');
+              } else {
+                context.push('/permission');
               }
             },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isHighContrast ? Colors.yellow : AppTheme.primaryContainer,
-        foregroundColor: isHighContrast ? Colors.black : Colors.white,
-        minimumSize: const Size(double.infinity, 72),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: isHighContrast ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.directions_run, size: 32),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Text(
-              "INICIAR CAMINHADA",
-              style: TextStyle(
-                fontSize: 22, 
-                fontWeight: FontWeight.w900,
-                color: isHighContrast ? Colors.black : Colors.white,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isHighContrast ? Colors.yellow : AppTheme.primaryContainer,
+              foregroundColor: isHighContrast ? Colors.black : Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: isHighContrast ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
               ),
-              overflow: TextOverflow.ellipsis,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(caminhadaEmAndamento ? Icons.directions_walk : Icons.directions_run, size: 32),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    caminhadaEmAndamento ? "VOLTAR À CAMINHADA" : "INICIAR CAMINHADA",
+                    softWrap: true,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22, 
+                      fontWeight: FontWeight.w900,
+                      color: isHighContrast ? Colors.black : Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
