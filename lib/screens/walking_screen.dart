@@ -4,6 +4,7 @@ import 'package:caminhandojuntos/models/tracking_state.dart';
 import 'package:caminhandojuntos/widgets/speakable_widget.dart';
 import 'package:caminhandojuntos/widgets/compass_arrow.dart';
 import 'package:caminhandojuntos/widgets/app_tile_layer.dart';
+import 'package:caminhandojuntos/widgets/map_credit_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -184,45 +185,48 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
   Widget _buildMap(BuildContext context) {
     final isHighContrast = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      height: 240,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: isHighContrast ? Border.all(color: Colors.white, width: 3) : null,
-        boxShadow: !isHighContrast ? [const BoxShadow(color: Colors.black12, blurRadius: 8)] : null,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: FlutterMap(
-          mapController: _mapController,
-          options: const MapOptions(
-            initialCenter: LatLng(-23.5505, -46.6333),
-            initialZoom: 16,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          height: 240,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: isHighContrast ? Border.all(color: Colors.white, width: 3) : null,
+            boxShadow: !isHighContrast ? [const BoxShadow(color: Colors.black12, blurRadius: 8)] : null,
           ),
-          children: [
-            AppTileLayer.build(isHighContrast: isHighContrast),
-            RichAttributionWidget(
-              attributions: AppTileLayer.getAttributions(context),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: FlutterMap(
+              mapController: _mapController,
+              options: const MapOptions(
+                initialCenter: LatLng(-23.5505, -46.6333),
+                initialZoom: 16,
+              ),
+              children: [
+                AppTileLayer.build(isHighContrast: isHighContrast),
+                // REGRA: Isolar camadas para reduzir rebuilds
+                Consumer(builder: (context, ref, _) {
+                  final path = ref.watch(trackingProvider.select((s) => s.mapPath));
+                  if (path.isEmpty) return const SizedBox.shrink();
+                  return PolylineLayer(
+                    polylines: [Polyline(points: path, color: isHighContrast ? Colors.yellow : AppTheme.primaryColor, strokeWidth: 8)],
+                  );
+                }),
+                Consumer(builder: (context, ref, _) {
+                  final pos = ref.watch(trackingProvider.select((s) => s.currentPosition));
+                  if (pos == null) return const SizedBox.shrink();
+                  return MarkerLayer(
+                    markers: [Marker(point: pos, width: 60, height: 60, child: Icon(Icons.directions_walk, color: isHighContrast ? Colors.cyanAccent : AppTheme.primaryColor, size: 40))],
+                  );
+                }),
+              ],
             ),
-            // REGRA: Isolar camadas para reduzir rebuilds
-            Consumer(builder: (context, ref, _) {
-              final path = ref.watch(trackingProvider.select((s) => s.mapPath));
-              if (path.isEmpty) return const SizedBox.shrink();
-              return PolylineLayer(
-                polylines: [Polyline(points: path, color: isHighContrast ? Colors.yellow : AppTheme.primaryColor, strokeWidth: 8)],
-              );
-            }),
-            Consumer(builder: (context, ref, _) {
-              final pos = ref.watch(trackingProvider.select((s) => s.currentPosition));
-              if (pos == null) return const SizedBox.shrink();
-              return MarkerLayer(
-                markers: [Marker(point: pos, width: 60, height: 60, child: Icon(Icons.directions_walk, color: isHighContrast ? Colors.cyanAccent : AppTheme.primaryColor, size: 40))],
-              );
-            }),
-          ],
+          ),
         ),
-      ),
+        const MapCreditBar(),
+      ],
     );
   }
 
