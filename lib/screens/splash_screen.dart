@@ -1,8 +1,11 @@
 import 'package:caminhandojuntos/providers/user_provider.dart';
+import 'package:caminhandojuntos/providers/tracking_provider.dart';
+import 'package:caminhandojuntos/services/sync_service.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -22,13 +25,34 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // Carrega o usuário do cache local
     await ref.read(userProvider.notifier).init();
     
+    // Restaura caminhada em andamento
+    await ref.read(trackingProvider.notifier).restoreTracking();
+    
+    // Dispara sync inicial
+    ref.read(syncServiceProvider).triggerSync();
+    
     if (mounted) {
       final user = ref.read(userProvider);
-      // Navega para a rota correta baseada no cadastro
-      if (user.isRegistered) {
-        context.go('/dashboard');
-      } else {
+      
+      if (!user.isRegistered) {
         context.go('/welcome');
+        return;
+      }
+
+      // Tenta restaurar a última rota
+      final prefs = await SharedPreferences.getInstance();
+      final ultimaRota = prefs.getString('ultima_rota');
+      
+      final allowedRoutes = ['/dashboard', '/walking', '/store', '/achievements', '/profile', '/accessibility'];
+      
+      if (ultimaRota != null && allowedRoutes.contains(ultimaRota)) {
+        if (ultimaRota == '/walking' && !ref.read(trackingProvider).caminhadaEmAndamento) {
+          context.go('/dashboard');
+        } else {
+          context.go(ultimaRota);
+        }
+      } else {
+        context.go('/dashboard');
       }
     }
   }

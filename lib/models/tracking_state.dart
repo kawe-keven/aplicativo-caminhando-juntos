@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 enum TrackingStatus { initial, tracking, paused, finished, syncing, error }
 
 class TrackingState {
+  final String? caminhadaId;
   final TrackingStatus status;
   final List<CoordinateModel> rawPath;
   final List<LatLng> mapPath; // Pontos simplificados para visualização
@@ -19,6 +20,7 @@ class TrackingState {
   final String? errorMessage;
 
   TrackingState({
+    this.caminhadaId,
     this.status = TrackingStatus.initial,
     this.rawPath = const [],
     this.mapPath = const [],
@@ -30,6 +32,7 @@ class TrackingState {
   });
 
   TrackingState copyWith({
+    String? caminhadaId,
     TrackingStatus? status,
     List<CoordinateModel>? rawPath,
     List<LatLng>? mapPath,
@@ -40,6 +43,7 @@ class TrackingState {
     String? errorMessage,
   }) {
     return TrackingState(
+      caminhadaId: caminhadaId ?? this.caminhadaId,
       status: status ?? this.status,
       rawPath: rawPath ?? this.rawPath,
       mapPath: mapPath ?? this.mapPath,

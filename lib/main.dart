@@ -1,8 +1,8 @@
 import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/routes/app_router.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
+import 'package:caminhandojuntos/services/background_sync.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'dart:developer' as developer;
@@ -11,18 +11,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pt_BR', null);
   
-  // Inicializa o cache de mapas offline com tratamento de erros robusto
+  // Inicializa o Background Sync
   try {
-    await FMTCObjectBoxBackend().initialise();
-    final store = const FMTCStore('mapCache');
-    await store.manage.create();
-  } catch (e, stackTrace) {
-    developer.log(
-      'Erro ao inicializar o cache de mapas offline (FMTC)',
-      error: e,
-      stackTrace: stackTrace,
-      name: 'Initialization',
-    );
+    await BackgroundSync.init();
+    await BackgroundSync.schedulePeriodicSync();
+  } catch (e) {
+    developer.log('Erro ao inicializar Workmanager', error: e);
   }
 
   runApp(

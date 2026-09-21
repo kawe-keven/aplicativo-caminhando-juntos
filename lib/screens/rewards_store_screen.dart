@@ -1,4 +1,5 @@
 import 'package:caminhandojuntos/models/reward.dart';
+import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/providers/store_provider.dart';
 import 'package:caminhandojuntos/models/user_progress.dart';
@@ -25,7 +26,6 @@ class RewardsStoreScreen extends ConsumerWidget {
             "Toque em um prêmio para ouvir detalhes ou resgatar.",
         child: Column(
           children: [
-            // Cabeçalho Customizado
             _buildHeader(context, dashboardState.progress),
             
             Expanded(
@@ -55,7 +55,7 @@ class RewardsStoreScreen extends ConsumerWidget {
                     },
                   ),
                   const SizedBox(height: 24),
-                  _InfoFooter(),
+                  const _InfoFooter(),
                 ],
               ),
             ),
@@ -66,51 +66,55 @@ class RewardsStoreScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, UserProgress progress) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    return Consumer(
+      builder: (context, ref, _) {
+        final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
-    return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 8, left: 16, right: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: isHighContrast 
-            ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
-            : null,
-      ),
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+        return Container(
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 8, left: 16, right: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: isHighContrast 
+                ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
+                : null,
+          ),
+          child: Row(
             children: [
-              Text("CaminhaJuntos", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
-              Text("Prêmios", style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("CaminhaJuntos", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.primary)),
+                  Text("Prêmios", style: TextStyle(fontSize: 12, color: isHighContrast ? Colors.white70 : Theme.of(context).colorScheme.onSurfaceVariant)),
+                ],
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isHighContrast ? Colors.black : const Color(0xFFFFDCC3), 
+                  borderRadius: BorderRadius.circular(20),
+                  border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.monetization_on, color: isHighContrast ? Colors.white : AppTheme.tertiaryColor, size: 24),
+                    const SizedBox(width: 4),
+                    Text(
+                      progress.coins.toString(), 
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        color: isHighContrast ? Colors.white : AppTheme.tertiaryColor, 
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isHighContrast ? Colors.yellow : const Color(0xFFFFDCC3), 
-              borderRadius: BorderRadius.circular(20),
-              border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.monetization_on, color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, size: 24),
-                const SizedBox(width: 4),
-                Text(
-                  progress.coins.toString(), 
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold, 
-                    color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, 
-                    fontSize: 18,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      }
     );
   }
 
@@ -150,12 +154,12 @@ class RewardsStoreScreen extends ConsumerWidget {
   }
 }
 
-class _BalanceCard extends StatelessWidget {
+class _BalanceCard extends ConsumerWidget {
   final int coins;
   const _BalanceCard({required this.coins});
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -171,10 +175,11 @@ class _BalanceCard extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: isHighContrast ? Colors.yellow : const Color(0xFFFFDCC3), 
+              color: isHighContrast ? Colors.black : const Color(0xFFFFDCC3), 
               shape: BoxShape.circle,
+              border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
             ),
-            child: Icon(Icons.monetization_on, color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, size: 30),
+            child: Icon(Icons.monetization_on, color: isHighContrast ? Colors.white : AppTheme.tertiaryColor, size: 30),
           ),
           const SizedBox(width: 12),
           Column(
@@ -186,7 +191,7 @@ class _BalanceCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 28, 
                   fontWeight: FontWeight.bold,
-                  color: isHighContrast ? Colors.yellow : null,
+                  color: isHighContrast ? Colors.white : null,
                 ),
               ),
             ],
@@ -197,13 +202,13 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-class _FilterSection extends StatelessWidget {
+class _FilterSection extends ConsumerWidget {
   final RewardCategory filter;
   final WidgetRef ref;
   const _FilterSection({required this.filter, required this.ref});
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return Container(
       padding: const EdgeInsets.all(4),
@@ -223,14 +228,14 @@ class _FilterSection extends StatelessWidget {
   }
 }
 
-class _FilterTab extends StatelessWidget {
+class _FilterTab extends ConsumerWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
   const _FilterTab({required this.label, required this.isSelected, required this.onTap});
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return Expanded(
       child: InkWell(
@@ -241,7 +246,7 @@ class _FilterTab extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected 
-                ? (isHighContrast ? Colors.yellow : AppTheme.primaryContainer) 
+                ? (isHighContrast ? Colors.white : AppTheme.primaryContainer) 
                 : null,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -259,10 +264,11 @@ class _FilterTab extends StatelessWidget {
   }
 }
 
-class _InfoFooter extends StatelessWidget {
+class _InfoFooter extends ConsumerWidget {
+  const _InfoFooter();
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return Container(
       padding: const EdgeInsets.all(20),

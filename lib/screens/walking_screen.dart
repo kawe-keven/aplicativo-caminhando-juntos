@@ -1,3 +1,5 @@
+import 'package:caminhandojuntos/config/ui_texts.dart';
+import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/providers/tracking_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/models/tracking_state.dart';
@@ -50,22 +52,19 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
         _initialMapCenter = currentPos;
       }
     } else {
-      // Tenta obter posição do serviço (com cache aquecido)
       final pos = await ref.read(initialLocationServiceProvider).obterPosicaoInicial();
       if (mounted) {
         setState(() {
           _initialMapCenter = pos;
         });
-        // Se ainda não iniciou e temos centro, inicia tracking
         ref.read(trackingProvider.notifier).startTracking();
       }
     }
 
-    // Se após 3 segundos ainda não tivermos centro, usa fallback do Brasil
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted && _initialMapCenter == null) {
         setState(() {
-          _initialMapCenter = const LatLng(-14.2350, -51.9253); // Centro do Brasil
+          _initialMapCenter = const LatLng(-14.2350, -51.9253); 
         });
         ref.read(trackingProvider.notifier).startTracking();
       }
@@ -87,26 +86,62 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
   }
 
   void _handleBackAction() {
-    // Retornar à Dashboard sem resetar o estado global de rastreamento
     context.go('/dashboard');
   }
 
   void _showFinishDialog() {
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Finalizar Caminhada?"),
-        content: const Text("As coordenadas serão enviadas para validação no servidor."),
+        title: const Text(UiTexts.finishDialogTitle),
+        actionsOverflowDirection: VerticalDirection.down,
+        actionsAlignment: MainAxisAlignment.end,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
           ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 56),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              UiTexts.finishDialogNo,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          OutlinedButton(
             onPressed: () async {
               Navigator.pop(context);
-              final router = GoRouter.of(context);
-              await ref.read(trackingProvider.notifier).finishAndSync();
+              final notifier = ref.read(trackingProvider.notifier);
+              
+              await notifier.finishAndSync();
+              
+              final state = ref.read(trackingProvider);
+              if (state.errorMessage == "offline_sync_pending") {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text(UiTexts.walkFinishedMessage),
+                    duration: Duration(seconds: 5),
+                  ),
+                );
+              }
               router.go('/summary');
             },
-            child: const Text("Sim, Sincronizar"),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 56),
+              side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              UiTexts.finishDialogYes,
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),
@@ -134,7 +169,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
   @override
   Widget build(BuildContext context) {
     final trackingState = ref.watch(trackingProvider);
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     if (_initialMapCenter == null) {
       return Scaffold(
@@ -157,71 +192,70 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         body: Stack(
           children: [
-            // 1. MAPA OCUPANDO 100% DA TELA ATÉ AS BORDAS
             Positioned.fill(
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: _initialMapCenter!,
-                  initialZoom: isFallbackBrazil ? 4 : 17,
-                  onMapReady: () {
-                    // Se abrimos com o fallback do Brasil e já temos uma posição real, movemos para ela
-                    final realPos = ref.read(trackingProvider).currentPosition;
-                    if (realPos != null && isFallbackBrazil) {
-                      _mapController.move(realPos, 17);
-                    }
-                  },
+              child: Container(
+                color: isHighContrast ? Colors.grey[900] : Colors.grey[200],
+                child: FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: _initialMapCenter!,
+                    initialZoom: isFallbackBrazil ? 4 : 17,
+                    onMapReady: () {
+                      final realPos = ref.read(trackingProvider).currentPosition;
+                      if (realPos != null && isFallbackBrazil) {
+                        _mapController.move(realPos, 17);
+                      }
+                    },
+                  ),
+                  children: [
+                    AppTileLayer.build(isHighContrast: isHighContrast),
+                    Consumer(builder: (context, ref, _) {
+                      final trackingData = ref.watch(trackingProvider);
+                      final pos = trackingData.currentPosition;
+                      
+                      if (pos != null && !_isMovingToPosition) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            _mapController.move(pos, 17);
+                            _isMovingToPosition = true;
+                          }
+                        });
+                      }
+                      
+                      if (pos == null) return const SizedBox.shrink();
+                      return MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: pos,
+                            width: 60,
+                            height: 60,
+                            child: Icon(
+                              Icons.directions_walk,
+                              color: isHighContrast ? Colors.cyanAccent : AppTheme.primaryColor,
+                              size: 40,
+                            ),
+                          )
+                        ],
+                      );
+                    }),
+                    Consumer(builder: (context, ref, _) {
+                      final path = ref.watch(trackingProvider.select((s) => s.mapPath));
+                      if (path.isEmpty) return const SizedBox.shrink();
+                      return PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: path,
+                            color: isHighContrast ? Colors.yellow : AppTheme.primaryColor,
+                            strokeWidth: 8,
+                          )
+                        ],
+                      );
+                    }),
+                  ],
                 ),
-                children: [
-                  AppTileLayer.build(isHighContrast: isHighContrast),
-                  Consumer(builder: (context, ref, _) {
-                    final trackingData = ref.watch(trackingProvider);
-                    final pos = trackingData.currentPosition;
-                    
-                    if (pos != null && !_isMovingToPosition) {
-                      // Recentra o mapa na primeira posição real se o centro inicial era aproximado ou do Brasil
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          _mapController.move(pos, 17);
-                          _isMovingToPosition = true;
-                        }
-                      });
-                    }
-                    
-                    if (pos == null) return const SizedBox.shrink();
-                    return MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: pos,
-                          width: 60,
-                          height: 60,
-                          child: Icon(
-                            Icons.directions_walk,
-                            color: isHighContrast ? Colors.cyanAccent : AppTheme.primaryColor,
-                            size: 40,
-                          ),
-                        )
-                      ],
-                    );
-                  }),
-                  Consumer(builder: (context, ref, _) {
-                    final path = ref.watch(trackingProvider.select((s) => s.mapPath));
-                    if (path.isEmpty) return const SizedBox.shrink();
-                    return PolylineLayer(
-                      polylines: [
-                        Polyline(
-                          points: path,
-                          color: isHighContrast ? Colors.yellow : AppTheme.primaryColor,
-                          strokeWidth: 8,
-                        )
-                      ],
-                    );
-                  }),
-                ],
               ),
             ),
 
-            // 2. OVERLAYS DE INTERAÇÃO PROTEGIDOS POR SAFE_AREA
             Positioned.fill(
               child: SafeArea(
                 child: Padding(
@@ -229,7 +263,6 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Linha Superior: Botão Voltar + Painel de Métricas Coletivo
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -243,15 +276,14 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                               alignment: Alignment.topRight,
                               child: WalkingInfoPanel(
                                 formattedTime: _formatDuration(trackingState.duration),
-                                distanceMetresOrKm: trackingState.mapPath.isNotEmpty ? 1200.0 : 0.0, // Utiliza o mapPath real
+                                distanceMetresOrKm: trackingState.mapPath.isNotEmpty ? 1200.0 : 0.0, 
                               ),
                             ),
                           ),
                         ],
                       ),
 
-                      // Tratamento de Erros de GPS real discretos em overlay flutuante
-                      if (trackingState.status == TrackingStatus.error || trackingState.errorMessage != null)
+                      if (trackingState.status == TrackingStatus.error || (trackingState.errorMessage != null && trackingState.errorMessage != "offline_sync_pending"))
                         Padding(
                           padding: const EdgeInsets.only(top: 16),
                           child: Container(
@@ -266,7 +298,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    trackingState.errorMessage ?? "Falha de conexão com o sinal de GPS.",
+                                    UiTexts.messageForUser(trackingState.errorMessage),
                                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                                   ),
                                 ),
@@ -277,20 +309,17 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
 
                       const Spacer(),
 
-                      // Atribuição de Mapas pequena e legível sobre o mapa (ajustada para não cobrir botões)
                       const Padding(
                         padding: EdgeInsets.only(bottom: 8, left: 4),
                         child: MapCreditLabel(),
                       ),
 
-                      // Indicador de Sincronização em andamento
                       if (trackingState.status == TrackingStatus.syncing)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
                           child: Center(child: CircularProgressIndicator()),
                         )
                       else
-                        // Painel inferior com os botões de ação estruturados (SOS, Pausar, Finalizar)
                         WalkingActionButtons(
                           trackingStatus: trackingState.status,
                           onPauseToggle: () {

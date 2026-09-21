@@ -49,14 +49,14 @@ class AppTheme {
     return _buildTheme(
       colorScheme: const ColorScheme(
         brightness: Brightness.dark,
-        primary: Colors.yellow,
-        onPrimary: Colors.black,
+        primary: Color(0xFFFAFAFA), // Branco Gelo para botões primários
+        onPrimary: Color(0xFF0A0A0A),
         secondary: Colors.cyanAccent,
         onSecondary: Colors.black,
-        tertiary: Colors.orangeAccent,
+        tertiary: Color(0xFFFFD600), // Amarelo para SOS/Alertas (Passa AAA)
         onTertiary: Colors.black,
-        surface: Colors.black,
-        onSurface: Colors.white,
+        surface: Color(0xFF0A0A0A),
+        onSurface: Color(0xFFFAFAFA),
         error: Colors.redAccent,
         onError: Colors.white,
       ),

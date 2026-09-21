@@ -42,6 +42,20 @@ O projeto combate o sedentarismo combinando **design com alta acessibilidade vis
 - [x] **Persistência do Usuário:** Sessão mantida localmente para evitar múltiplos cadastros ao reabrir o app.
 - [x] **Loja de Recompensas:** Interface de troca de moedas virtuais por benefícios em jogos parceiros.
 - [x] **Otimizações de UI/Performance:** Cache inteligente de imagens (`cached_network_image`), transições fluidas e ícones customizados (`flutter_launcher_icons`).
+- [x] **Segurança e Mapas:** Migração para Mapbox Tiles finalizada com injeção segura de tokens via `dart-define`.
+
+---
+
+## 🚀 Como Executar
+
+Para garantir a segurança, o token do Mapbox não está no código. Siga os passos:
+1. Crie um arquivo chamado `mapbox_env.json` na raiz do projeto (use o `lib/config/mapbox_env.json.example` como base).
+2. Adicione seu token público do Mapbox no campo `MAPBOX_TOKEN`.
+3. Execute o app usando:
+   ```bash
+   flutter run --dart-define-from-file=mapbox_env.json
+   ```
+   No **Android Studio**, adicione `--dart-define-from-file=mapbox_env.json` no campo "Additional run args" em *Edit Configurations*.
 
 ---
 

@@ -1,8 +1,8 @@
+import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/providers/user_provider.dart';
 import 'package:caminhandojuntos/providers/weather_provider.dart';
 import 'package:caminhandojuntos/providers/tracking_provider.dart';
-import 'package:caminhandojuntos/services/initial_location_service.dart';
 import 'package:caminhandojuntos/models/user_progress.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/dashboard_stats_grid.dart';
@@ -24,10 +24,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Pré-aquecimento da localização inicial em segundo plano
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(initialLocationProvider);
-    });
   }
 
   @override
@@ -35,6 +31,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final DashboardState dashboardState = ref.watch(dashboardProvider);
     final user = ref.watch(userProvider);
     final weather = ref.watch(weatherProvider);
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     final String welcomeMsg = "Bom dia, ${user.name.isEmpty ? 'Seu Antônio' : user.name}. "
         "Seu saldo atual é de ${dashboardState.progress.coins} moedas. "
@@ -49,9 +46,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           text: welcomeMsg,
           child: Column(
             children: [
-              // Cabeçalho Customizado
               _buildHeader(context, dashboardState.progress),
-              
               Expanded(
                 child: CustomScrollView(
                   scrollCacheExtent: const ScrollCacheExtent.pixels(500.0),
@@ -65,21 +60,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             "Bom dia, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! ☀️",
                             key: const ValueKey('welcome_text'),
                             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
+                              color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.primary,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Row(
                             key: const ValueKey('weather_row'),
                             children: [
-                              Icon(Icons.sunny, color: Theme.of(context).colorScheme.secondary, size: 20),
+                              Icon(Icons.sunny, color: isHighContrast ? Colors.yellow : Theme.of(context).colorScheme.secondary, size: 20),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   "${weather.formattedDate} • ${weather.temperature} - ${weather.isLoading ? 'Buscando clima...' : 'Ótimo para caminhar'}",
                                   style: TextStyle(
                                     fontSize: 16, 
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: isHighContrast ? Colors.white70 : Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -118,7 +113,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildHeader(BuildContext context, UserProgress progress) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -153,7 +148,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   style: TextStyle(
                     fontSize: 18, 
                     fontWeight: FontWeight.bold, 
-                    color: Theme.of(context).colorScheme.primary,
+                    color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.primary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -161,7 +156,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   "Início",
                   style: TextStyle(
                     fontSize: 11, 
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: isHighContrast ? Colors.white70 : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -174,7 +169,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
-                color: isHighContrast ? Colors.yellow : const Color(0xFFFFDCC3), 
+                color: isHighContrast ? Colors.black : const Color(0xFFFFDCC3), 
                 borderRadius: BorderRadius.circular(20),
                 border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
               ),
@@ -183,7 +178,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 children: [
                   Icon(
                     Icons.monetization_on, 
-                    color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, 
+                    color: isHighContrast ? Colors.white : AppTheme.tertiaryColor, 
                     size: 16,
                   ),
                   const SizedBox(width: 4),
@@ -192,7 +187,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       progress.coins.toString(),
                       style: TextStyle(
                         fontWeight: FontWeight.bold, 
-                        color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, 
+                        color: isHighContrast ? Colors.white : AppTheme.tertiaryColor, 
                         fontSize: 14,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -255,13 +250,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
-class _BalanceCard extends StatelessWidget {
+class _BalanceCard extends ConsumerWidget {
   final int coins;
   const _BalanceCard({super.key, required this.coins});
 
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -283,12 +278,13 @@ class _BalanceCard extends StatelessWidget {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: isHighContrast ? Colors.yellow : const Color(0xFFFFDCC3), 
+                    color: isHighContrast ? Colors.black : const Color(0xFFFFDCC3), 
                     shape: BoxShape.circle,
+                    border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
                   ),
                   child: Icon(
                     Icons.monetization_on, 
-                    color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, 
+                    color: isHighContrast ? Colors.white : AppTheme.tertiaryColor, 
                     size: 28,
                   ),
                 ),
@@ -310,7 +306,7 @@ class _BalanceCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 22, 
                           fontWeight: FontWeight.bold, 
-                          color: isHighContrast ? Colors.yellow : AppTheme.tertiaryColor,
+                          color: isHighContrast ? Colors.white : AppTheme.tertiaryColor,
                         ), 
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -329,6 +325,10 @@ class _BalanceCard extends StatelessWidget {
               minimumSize: const Size(80, 44),
               padding: const EdgeInsets.symmetric(horizontal: 12),
               elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: isHighContrast ? const BorderSide(color: Colors.black, width: 2) : BorderSide.none,
+              ),
             ),
             child: const Text("Prêmios"),
           ),
@@ -338,13 +338,13 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-class _ProgressCard extends StatelessWidget {
+class _ProgressCard extends ConsumerWidget {
   final UserProgress progress;
   const _ProgressCard({super.key, required this.progress});
 
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -380,7 +380,7 @@ class _StartWalkingButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
     final caminhadaEmAndamento = ref.watch(trackingProvider.select((s) => s.caminhadaEmAndamento));
 
     return Semantics(
@@ -399,7 +399,7 @@ class _StartWalkingButton extends ConsumerWidget {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: isHighContrast ? Colors.yellow : AppTheme.primaryContainer,
+              backgroundColor: isHighContrast ? Colors.white : AppTheme.primaryContainer,
               foregroundColor: isHighContrast ? Colors.black : Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -410,7 +410,7 @@ class _StartWalkingButton extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(caminhadaEmAndamento ? Icons.directions_walk : Icons.directions_run, size: 32),
+                Icon(caminhadaEmAndamento ? Icons.directions_walk : Icons.directions_run, size: 32, color: isHighContrast ? Colors.black : Colors.white),
                 const SizedBox(width: 12),
                 Flexible(
                   child: Text(
@@ -433,11 +433,11 @@ class _StartWalkingButton extends ConsumerWidget {
   }
 }
 
-class _GroupWalkingCard extends StatelessWidget {
+class _GroupWalkingCard extends ConsumerWidget {
   const _GroupWalkingCard({super.key});
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -456,10 +456,10 @@ class _GroupWalkingCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
+              const Expanded(
                 child: Text(
                   "Caminhada em Grupo Hoje",
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -469,7 +469,7 @@ class _GroupWalkingCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18, 
                   fontWeight: FontWeight.bold, 
-                  color: isHighContrast ? Colors.yellow : AppTheme.primaryColor,
+                  color: isHighContrast ? Colors.white : AppTheme.primaryColor,
                 ),
               ),
             ],
@@ -517,7 +517,7 @@ class _GroupWalkingCard extends StatelessWidget {
                       Text(
                         "7 vizinhos já confirmaram presença!", 
                         style: TextStyle(
-                          color: isHighContrast ? Colors.yellow : Colors.white70, 
+                          color: isHighContrast ? Colors.white70 : Colors.white70, 
                           fontSize: 16,
                           fontWeight: isHighContrast ? FontWeight.bold : FontWeight.normal,
                           backgroundColor: isHighContrast ? Colors.black : Colors.transparent,
@@ -539,7 +539,7 @@ class _EmergencyCard extends ConsumerWidget {
   const _EmergencyCard({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
     final user = ref.watch(userProvider);
 
     return Speakable(

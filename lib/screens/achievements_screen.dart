@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/providers/achievements_provider.dart';
 import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/models/user_progress.dart';
@@ -51,7 +52,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
   Widget build(BuildContext context) {
     final achievements = ref.watch(achievementsProvider);
     final dashboardState = ref.watch(dashboardProvider);
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     final unlockedCount = achievements.where((a) => a.isUnlocked).length;
     final totalCount = achievements.length;
@@ -64,7 +65,6 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
         text: "Tela de medalhas. Você já conquistou $unlockedCount medalhas de um total de $totalCount.",
         child: Column(
           children: [
-            // Cabeçalho Customizado
             _buildHeader(context, dashboardState.progress),
             
             Expanded(
@@ -83,7 +83,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                             style: TextStyle(
                               fontSize: 24, 
                               fontWeight: FontWeight.bold, 
-                              color: Theme.of(context).colorScheme.primary,
+                              color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.primary,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -113,12 +113,12 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                     icon: const Icon(Icons.share, size: 28),
                     label: const Text("Compartilhar com a Família", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isHighContrast ? Colors.yellow : AppTheme.secondaryColor,
+                      backgroundColor: isHighContrast ? Colors.white : AppTheme.secondaryColor,
                       foregroundColor: isHighContrast ? Colors.black : Colors.white,
                       minimumSize: const Size(double.infinity, 72),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                        side: isHighContrast ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
+                        side: isHighContrast ? const BorderSide(color: Colors.black, width: 3) : BorderSide.none,
                       ),
                     ),
                   ),
@@ -133,83 +133,87 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
   }
 
   Widget _buildHeader(BuildContext context, UserProgress progress) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    return Consumer(
+      builder: (context, ref, _) {
+        final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: isHighContrast ? const Border(bottom: BorderSide(color: Colors.white, width: 2)) : null,
-      ),
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+        return Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: isHighContrast ? const Border(bottom: BorderSide(color: Colors.white, width: 2)) : null,
+          ),
+          child: Row(
             children: [
-              Text(
-                "CaminhaJuntos", 
-                style: TextStyle(
-                  fontSize: 20, 
-                  fontWeight: FontWeight.bold, 
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "CaminhaJuntos", 
+                    style: TextStyle(
+                      fontSize: 20, 
+                      fontWeight: FontWeight.bold, 
+                      color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  Text(
+                    "Conquistas", 
+                    style: TextStyle(
+                      fontSize: 12, 
+                      color: isHighContrast ? Colors.white70 : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                "Conquistas", 
-                style: TextStyle(
-                  fontSize: 12, 
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isHighContrast ? Colors.black : const Color(0xFFFFDCC3), 
+                  borderRadius: BorderRadius.circular(20),
+                  border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.monetization_on, 
+                      color: isHighContrast ? Colors.white : AppTheme.tertiaryColor, 
+                      size: 24,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      progress.coins.toString(), 
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        color: isHighContrast ? Colors.white : AppTheme.tertiaryColor, 
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isHighContrast ? Colors.yellow : const Color(0xFFFFDCC3), 
-              borderRadius: BorderRadius.circular(20),
-              border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.monetization_on, 
-                  color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, 
-                  size: 24,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  progress.coins.toString(), 
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold, 
-                    color: isHighContrast ? Colors.black : AppTheme.tertiaryColor, 
-                    fontSize: 18,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      }
     );
   }
 }
 
-class _ProgressOverview extends StatelessWidget {
+class _ProgressOverview extends ConsumerWidget {
   final int unlocked;
   final int total;
   final double progress;
   const _ProgressOverview({required this.unlocked, required this.total, required this.progress});
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isHighContrast ? Colors.black : Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
         boxShadow: !isHighContrast ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))] : null,
@@ -227,7 +231,7 @@ class _ProgressOverview extends StatelessWidget {
             minHeight: 12, 
             borderRadius: BorderRadius.circular(8),
             backgroundColor: isHighContrast ? Colors.white24 : null,
-            color: isHighContrast ? Colors.yellow : null,
+            color: isHighContrast ? Colors.white : null,
           ),
         ],
       ),

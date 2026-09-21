@@ -20,10 +20,11 @@ class _PermissionScreenState extends State<PermissionScreen> {
     setState(() => _isLoading = true);
     
     try {
-      // Solicita Localização e Telefone simultaneamente
+      // Solicita Localização, Telefone e Notificações (Android 13+) simultaneamente
       Map<Permission, PermissionStatus> statuses = await [
         Permission.location,
         Permission.phone,
+        Permission.notification,
       ].request();
 
       final locStatus = statuses[Permission.location];

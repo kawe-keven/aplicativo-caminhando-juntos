@@ -1,8 +1,10 @@
 import 'package:caminhandojuntos/models/tracking_state.dart';
+import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class WalkingActionButtons extends StatelessWidget {
+class WalkingActionButtons extends ConsumerWidget {
   final TrackingStatus trackingStatus;
   final VoidCallback onPauseToggle;
   final VoidCallback onFinish;
@@ -17,8 +19,8 @@ class WalkingActionButtons extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -102,12 +104,12 @@ class _ActionButton extends StatelessWidget {
     BorderSide? border;
 
     if (isSOS) {
-      bgColor = isHighContrast ? Colors.red : AppTheme.errorColor;
-      fgColor = Colors.white;
+      bgColor = isHighContrast ? Color(0xFFFFD600) : AppTheme.errorColor;
+      fgColor = isHighContrast ? Colors.black : Colors.white;
       border = isHighContrast ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none;
     } else if (isPrimary) {
-      bgColor = Theme.of(context).colorScheme.primary;
-      fgColor = Theme.of(context).colorScheme.onPrimary;
+      bgColor = isHighContrast ? Color(0xFFFAFAFA) : Theme.of(context).colorScheme.primary;
+      fgColor = isHighContrast ? Color(0xFF0A0A0A) : Theme.of(context).colorScheme.onPrimary;
       border = isHighContrast ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none;
     } else {
       bgColor = isHighContrast ? Colors.black : Colors.white;

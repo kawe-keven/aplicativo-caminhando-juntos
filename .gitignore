@@ -49,3 +49,6 @@ app.*.map.json
 
 # Mapbox Configuration Secrets
 lib/config/secrets.dart
+mapbox_env.json
+.env
+*.secret.json
