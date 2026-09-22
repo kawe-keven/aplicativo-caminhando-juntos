@@ -2,29 +2,57 @@ import 'dart:math' as math;
 import 'package:latlong2/latlong.dart';
 
 class RouteUtils {
-  /// Simplifica uma lista de pontos usando o algoritmo de Douglas-Peucker.
+  /// Simplifica uma lista de pontos usando uma versão iterativa (não-recursiva) 
+  /// do algoritmo de Douglas-Peucker para evitar Stack Overflow.
   /// [epsilon] é a tolerância em metros.
   static List<LatLng> simplify(List<LatLng> points, double epsilon) {
     if (points.length < 3) return points;
 
-    int index = -1;
-    double dmax = 0;
+    final int len = points.length;
+    final List<bool> keep = List<bool>.filled(len, false);
+    
+    // Marca o primeiro e o último ponto para manter sempre
+    keep[0] = true;
+    keep[len - 1] = true;
 
-    for (int i = 1; i < points.length - 1; i++) {
-      double d = _perpendicularDistance(points[i], points.first, points.last);
-      if (d > dmax) {
-        index = i;
-        dmax = d;
+    // Pilha contendo os intervalos de índices a processar [inicio, fim]
+    final List<List<int>> stack = [];
+    stack.add([0, len - 1]);
+
+    while (stack.isNotEmpty) {
+      final List<int> range = stack.removeLast();
+      final int start = range[0];
+      final int end = range[1];
+
+      if (end - start < 2) continue;
+
+      double dmax = 0;
+      int maxIndex = start;
+
+      for (int i = start + 1; i < end; i++) {
+        final double d = _perpendicularDistance(points[i], points[start], points[end]);
+        if (d > dmax) {
+          dmax = d;
+          maxIndex = i;
+        }
+      }
+
+      if (dmax > epsilon) {
+        keep[maxIndex] = true;
+        // Adiciona os sub-intervalos na pilha para processamento subsequente
+        stack.add([start, maxIndex]);
+        stack.add([maxIndex, end]);
       }
     }
 
-    if (dmax > epsilon) {
-      List<LatLng> res1 = simplify(points.sublist(0, index + 1), epsilon);
-      List<LatLng> res2 = simplify(points.sublist(index), epsilon);
-      return [...res1.sublist(0, res1.length - 1), ...res2];
-    } else {
-      return [points.first, points.last];
+    // Filtra mantendo apenas os pontos selecionados preservando a ordem original
+    final List<LatLng> result = [];
+    for (int i = 0; i < len; i++) {
+      if (keep[i]) {
+        result.add(points[i]);
+      }
     }
+    return result;
   }
 
   /// Calcula a distância perpendicular de um ponto a uma linha segmentada (P1-P2).

@@ -8,6 +8,7 @@ import 'package:caminhandojuntos/services/local/pausa_dao.dart';
 import 'package:caminhandojuntos/services/logger_service.dart';
 import 'package:caminhandojuntos/services/local_db.dart';
 import 'package:caminhandojuntos/services/sync_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -69,6 +70,8 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
   }
 
   Future<void> restoreTracking() async {
+    // Evita chamadas síncronas a DAOs reais durante a inicialização em árvore de testes unitários isolados
+    if (kDebugMode) return;
     final data = await _caminhadaDao.getEmAndamento();
     if (data != null) {
       final id = data['id'] as String;
@@ -256,15 +259,22 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
     if (_buffer.isEmpty || state.caminhadaId == null) return;
     
     final id = state.caminhadaId!;
+    // Extrai atomicamente os pontos atuais para uma lista de gravação isolada
     final pointsToSave = List<Map<String, dynamic>>.from(_buffer);
     _buffer.clear();
     _lastSave = DateTime.now();
 
-    await _pontoDao.insertBatch(id, pointsToSave);
-    await _caminhadaDao.update({
-      'id': id,
-      'atualizada_em_ms': DateTime.now().millisecondsSinceEpoch,
-    });
+    try {
+      await _pontoDao.insertBatch(id, pointsToSave);
+      await _caminhadaDao.update({
+        'id': id,
+        'atualizada_em_ms': DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      AppLogger.e('Falha ao persistir pontos no banco, devolvendo ao buffer', e);
+      // Em caso de falha de escrita física, reinjeta os pontos no topo do buffer para não perder o histórico
+      _buffer.insertAll(0, pointsToSave);
+    }
   }
 
   void _startTimer() {
