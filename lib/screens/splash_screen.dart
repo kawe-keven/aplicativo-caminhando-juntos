@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:caminhandojuntos/providers/user_provider.dart';
 import 'package:caminhandojuntos/providers/tracking_provider.dart';
 import 'package:caminhandojuntos/services/sync_service.dart';
@@ -22,14 +23,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _init() async {
-    // Carrega o usuário do cache local
-    await ref.read(userProvider.notifier).init();
+    // Inicialização Concorrente em Paralelo das leituras físicas de disco (I/O).
+    // O tempo total passa a ser o da tarefa mais demorada, eliminando o gargalo sequencial.
+    await Future.wait([
+      ref.read(userProvider.notifier).init(),
+      ref.read(trackingProvider.notifier).restoreTracking(),
+    ]);
     
-    // Restaura caminhada em andamento
-    await ref.read(trackingProvider.notifier).restoreTracking();
-    
-    // Dispara sync inicial
-    ref.read(syncServiceProvider).triggerSync();
+    // Dispara a sincronização de background de forma totalmente não-bloqueante (fire-and-forget),
+    // liberando o fluxo da UI e a navegação da Splash Screen imediatamente.
+    unawaited(ref.read(syncServiceProvider).triggerSync());
     
     if (mounted) {
       final user = ref.read(userProvider);
@@ -41,6 +44,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
       // Tenta restaurar a última rota
       final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
       final ultimaRota = prefs.getString('ultima_rota');
       
       final allowedRoutes = ['/dashboard', '/walking', '/store', '/achievements', '/profile', '/accessibility'];

@@ -35,13 +35,7 @@ class RewardCardWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.asset(
-                  "assets/images/logo_launcher.png",
-                  fit: BoxFit.cover,
-                ),
-              ),
+              child: _buildRewardImage(context),
             ),
             Padding(
               padding: const EdgeInsets.all(12),
@@ -81,6 +75,68 @@ class RewardCardWidget extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRewardImage(BuildContext context) {
+    // Mapeamento de Cores e Ícones específicos de alta nitidez para cada prêmio (Essencial para acessibilidade do Idoso)
+    Color startColor;
+    Color endColor;
+    IconData icon;
+
+    switch (reward.title.toLowerCase()) {
+      case 'candy crush':
+        startColor = Colors.pink;
+        endColor = Colors.purple;
+        icon = Icons.cake; // Cake como substituto visual para doces
+        break;
+      case 'palavras cruzadas':
+        startColor = Colors.blue;
+        endColor = Colors.teal;
+        icon = Icons.grid_on;
+        break;
+      case 'buraco & tranca':
+        startColor = Colors.orange;
+        endColor = Colors.deepOrange;
+        icon = Icons.style; // Cartas de baralho
+        break;
+      case 'caça-palavras':
+        startColor = Colors.green;
+        endColor = Colors.lightGreen;
+        icon = Icons.search;
+        break;
+      case 'dominó online':
+        startColor = Colors.indigo;
+        endColor = Colors.blueAccent;
+        icon = Icons.view_module;
+        break;
+      case 'farm heroes':
+        startColor = Colors.amber;
+        endColor = Colors.orangeAccent;
+        icon = Icons.eco;
+        break;
+      default:
+        startColor = AppTheme.primaryColor;
+        endColor = AppTheme.secondaryColor;
+        icon = Icons.card_giftcard;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [startColor, endColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Center(
+        child: Icon(
+          icon,
+          size: 54,
+          color: Colors.white,
         ),
       ),
     );
