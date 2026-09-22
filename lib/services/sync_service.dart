@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:caminhandojuntos/services/sync_core.dart';
+import 'package:caminhandojuntos/services/sync/sync_worker.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,7 +10,7 @@ final syncServiceProvider = Provider<SyncService>((ref) {
 });
 
 class SyncService {
-  final SyncCore _syncCore = SyncCore();
+  final SyncWorker _worker = SyncWorker();
   StreamSubscription? _connectivitySubscription;
 
   SyncService() {
@@ -26,7 +26,7 @@ class SyncService {
   }
 
   Future<void> triggerSync() async {
-    await _syncCore.runSync();
+    await _worker.run();
   }
 
   void dispose() {

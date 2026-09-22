@@ -40,20 +40,13 @@ class LocalDb {
         path,
         version: 1,
         onConfigure: (db) async {
-          await db.execute('PRAGMA foreign_keys = ON');
-        },
-        onCreate: _onCreate,
-        onOpen: (db) async {
-          // PRAGMAs que retornam valores devem usar rawQuery no sqflite/Android
+          // Configurações de estado global da conexão (rawQuery para Android/sqflite)
+          await db.rawQuery('PRAGMA foreign_keys = ON');
           await db.rawQuery('PRAGMA journal_mode = WAL');
           await db.rawQuery('PRAGMA synchronous = NORMAL');
           await db.rawQuery('PRAGMA busy_timeout = 5000');
-          
-          final result = await db.rawQuery('PRAGMA quick_check');
-          if (result.first['quick_check'] != 'ok') {
-            throw Exception('Quick check failed');
-          }
         },
+        onCreate: _onCreate,
       );
       _database = db;
       return db;
@@ -68,14 +61,12 @@ class LocalDb {
         path,
         version: 1,
         onConfigure: (db) async {
-          await db.execute('PRAGMA foreign_keys = ON');
-        },
-        onCreate: _onCreate,
-        onOpen: (db) async {
+          await db.rawQuery('PRAGMA foreign_keys = ON');
           await db.rawQuery('PRAGMA journal_mode = WAL');
           await db.rawQuery('PRAGMA synchronous = NORMAL');
           await db.rawQuery('PRAGMA busy_timeout = 5000');
         },
+        onCreate: _onCreate,
       );
       _database = db;
       return db;
@@ -86,34 +77,43 @@ class LocalDb {
     await db.execute('''
       CREATE TABLE caminhadas (
         id TEXT PRIMARY KEY,
-        inicio_ms INTEGER,
+        inicio_ms INTEGER NOT NULL,
         fim_ms INTEGER,
-        status TEXT,
-        tentativas INTEGER DEFAULT 0,
-        ultima_tentativa_ms INTEGER,
-        ultimo_erro TEXT,
-        criada_em_ms INTEGER,
-        lease_expira_ms INTEGER,
-        tempo_ativo_ms INTEGER DEFAULT 0,
-        pausada INTEGER DEFAULT 0,
-        atualizada_em_ms INTEGER
+        status TEXT NOT NULL CHECK (status IN ('em_andamento','pendente','enviando','sincronizada','rejeitada')),
+        tempo_ativo_ms INTEGER NOT NULL DEFAULT 0,
+        pausada INTEGER NOT NULL DEFAULT 0 CHECK (pausada IN (0,1)),
+        tentativas INTEGER NOT NULL DEFAULT 0,
+        motivo_rejeicao TEXT,
+        atualizada_em_ms INTEGER NOT NULL
       )
     ''');
 
     await db.execute('''
       CREATE TABLE pontos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        caminhada_id TEXT,
-        lat REAL,
-        lng REAL,
-        precisao REAL,
-        timestamp_ms INTEGER,
+        caminhada_id TEXT NOT NULL,
+        lat REAL NOT NULL,
+        lng REAL NOT NULL,
+        precisao REAL NOT NULL,
+        suspeito INTEGER NOT NULL DEFAULT 0 CHECK (suspeito IN (0,1)),
+        timestamp_ms INTEGER NOT NULL,
         FOREIGN KEY (caminhada_id) REFERENCES caminhadas (id) ON DELETE CASCADE
       )
     ''');
 
-    await db.execute('CREATE INDEX idx_pontos_caminhada_id ON pontos(caminhada_id)');
-    await db.execute('CREATE INDEX idx_caminhadas_status ON caminhadas(status)');
+    await db.execute('''
+      CREATE TABLE pausas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        caminhada_id TEXT NOT NULL,
+        inicio_ms INTEGER NOT NULL,
+        fim_ms INTEGER,
+        FOREIGN KEY (caminhada_id) REFERENCES caminhadas (id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('CREATE INDEX idx_caminhadas_status ON caminhadas(status, atualizada_em_ms)');
+    await db.execute('CREATE INDEX idx_pontos_caminhada_ts ON pontos(caminhada_id, timestamp_ms)');
+    await db.execute('CREATE INDEX idx_pausas_caminhada ON pausas(caminhada_id)');
   }
 
   Future<void> _handleCorruption(String path) async {
@@ -126,8 +126,6 @@ class LocalDb {
       final originalFile = File(path);
       if (await originalFile.exists()) {
         await originalFile.copy(corruptPath);
-        // Tenta recuperar dados básicos se possível antes de apagar
-        // (Isso é complexo e omitirei para manter estabilidade, apenas preservamos o arquivo)
         await originalFile.delete();
         AppLogger.d('Corrupted database moved to $corruptPath');
       }
@@ -150,10 +148,6 @@ class LocalDb {
             attempts++;
             continue;
           }
-        }
-        if (e is DatabaseException && e.toString().contains('SQLITE_FULL')) {
-           AppLogger.e('Disco cheio (SQLITE_FULL)', e);
-           // Not throwing to avoid crash, but the caller should handle Result
         }
         rethrow;
       }

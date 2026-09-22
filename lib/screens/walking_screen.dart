@@ -3,6 +3,7 @@ import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/providers/tracking_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/models/tracking_state.dart';
+import 'package:caminhandojuntos/utils/route_utils.dart';
 import 'package:caminhandojuntos/widgets/app_tile_layer.dart';
 import 'package:caminhandojuntos/widgets/walking_back_button.dart';
 import 'package:caminhandojuntos/widgets/walking_info_panel.dart';
@@ -37,7 +38,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     _trackingSubscription = ref.listenManual(
       trackingProvider.select((s) => s.currentPosition),
       (previous, next) {
-        if (next != null && previous != next) {
+        if (next != null && previous != next && mounted) {
           _mapController.move(next, _mapController.camera.zoom);
         }
       },
@@ -86,6 +87,47 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
   }
 
   void _handleBackAction() {
+    final state = ref.read(trackingProvider);
+    
+    if (state.status == TrackingStatus.tracking || state.status == TrackingStatus.paused) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Sair da caminhada?"),
+          content: const Text("Escolha o que deseja fazer com a atividade atual:"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), 
+              child: const Text("Continuar caminhando")
+            ),
+            TextButton(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final router = GoRouter.of(context);
+                Navigator.pop(context);
+                await ref.read(trackingProvider.notifier).discardTracking();
+                messenger.showSnackBar(
+                  const SnackBar(content: Text("Caminhada descartada."))
+                );
+                router.go('/dashboard');
+              }, 
+              child: const Text("Descartar", style: TextStyle(color: Colors.red))
+            ),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(trackingProvider.notifier).pauseTracking();
+                Navigator.pop(context);
+                context.go('/dashboard');
+              }, 
+              child: const Text("Pausar e Sair")
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    ref.read(trackingProvider.notifier).reset();
     context.go('/dashboard');
   }
 
@@ -241,10 +283,14 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                     Consumer(builder: (context, ref, _) {
                       final path = ref.watch(trackingProvider.select((s) => s.mapPath));
                       if (path.isEmpty) return const SizedBox.shrink();
+                      
+                      // Suavização Douglas-Peucker (epsilon = 3m)
+                      final smoothedPath = RouteUtils.simplify(path, 3.0);
+                      
                       return PolylineLayer(
                         polylines: [
                           Polyline(
-                            points: path,
+                            points: smoothedPath,
                             color: isHighContrast ? Colors.yellow : AppTheme.primaryColor,
                             strokeWidth: 8,
                           )

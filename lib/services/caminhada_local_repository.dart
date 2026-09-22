@@ -40,6 +40,7 @@ class CaminhadaLocalRepository {
               'lat': ponto['lat'],
               'lng': ponto['lng'],
               'precisao': ponto['precisao'],
+              'suspeito': ponto['suspeito'] ?? 0,
               'timestamp_ms': ponto['timestamp_ms'],
             });
           }

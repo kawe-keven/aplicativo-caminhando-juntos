@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:caminhandojuntos/models/coordinate_model.dart';
 import 'package:caminhandojuntos/models/tracking_state.dart';
 import 'package:caminhandojuntos/services/caminhada_api_client.dart';
-import 'package:caminhandojuntos/services/caminhada_local_repository.dart';
+import 'package:caminhandojuntos/services/local/caminhada_dao.dart';
+import 'package:caminhandojuntos/services/local/ponto_dao.dart';
+import 'package:caminhandojuntos/services/local/pausa_dao.dart';
 import 'package:caminhandojuntos/services/logger_service.dart';
 import 'package:caminhandojuntos/services/local_db.dart';
 import 'package:caminhandojuntos/services/sync_service.dart';
@@ -12,27 +14,40 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final caminhadaLocalRepositoryProvider = Provider((ref) => CaminhadaLocalRepository());
+final caminhadaDaoProvider = Provider((ref) => CaminhadaDao());
+final pontoDaoProvider = Provider((ref) => PontoDao());
+final pausaDaoProvider = Provider((ref) => PausaDao());
 final caminhadaApiClientProvider = Provider((ref) => CaminhadaApiClient());
 
 final trackingProvider = StateNotifierProvider<TrackingNotifier, TrackingState>((ref) {
-  final localRepo = ref.watch(caminhadaLocalRepositoryProvider);
+  final caminhadaDao = ref.watch(caminhadaDaoProvider);
+  final pontoDao = ref.watch(pontoDaoProvider);
+  final pausaDao = ref.watch(pausaDaoProvider);
   final syncService = ref.watch(syncServiceProvider);
   final apiClient = ref.watch(caminhadaApiClientProvider);
-  return TrackingNotifier(localRepo, syncService, apiClient);
+  return TrackingNotifier(caminhadaDao, pontoDao, pausaDao, syncService, apiClient);
 });
 
 class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingObserver {
-  final CaminhadaLocalRepository _localRepo;
+  final CaminhadaDao _caminhadaDao;
+  final PontoDao _pontoDao;
+  final PausaDao _pausaDao;
   final SyncService _syncService;
   final CaminhadaApiClient _apiClient;
+  
   StreamSubscription<Position>? _positionSubscription;
   Timer? _timer;
   
   final List<Map<String, dynamic>> _buffer = [];
   DateTime _lastSave = DateTime.now();
 
-  TrackingNotifier(this._localRepo, this._syncService, this._apiClient) : super(TrackingState()) {
+  TrackingNotifier(
+    this._caminhadaDao, 
+    this._pontoDao, 
+    this._pausaDao, 
+    this._syncService, 
+    this._apiClient
+  ) : super(TrackingState()) {
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -47,8 +62,6 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
   }
 
   Future<void> _saveCurrentRoute() async {
-    // Note: In a real app, this should be triggered by GoRouter listener or similar.
-    // For now, we manually save the 'walking' route if we are in it.
     if (state.caminhadaEmAndamento) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('ultima_rota', '/walking');
@@ -56,28 +69,28 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
   }
 
   Future<void> restoreTracking() async {
-    final res = await _localRepo.obterEmAndamento();
-    if (res.isSuccess && res.data != null) {
-      final data = res.data!;
+    final data = await _caminhadaDao.getEmAndamento();
+    if (data != null) {
       final id = data['id'] as String;
+      final now = DateTime.now().millisecondsSinceEpoch;
       
       // Auto-finalize if > 24h
       final atualizadaEm = data['atualizada_em_ms'] as int;
-      if (DateTime.now().millisecondsSinceEpoch - atualizadaEm > 24 * 60 * 60 * 1000) {
-        await _localRepo.finalizar(id);
+      if (now - atualizadaEm > 24 * 60 * 60 * 1000) {
+        await _finalizeLocal(id, atualizadaEm);
         _syncService.triggerSync();
         return;
       }
 
-      final pontosRes = await _localRepo.listarPontos(id);
+      final pontos = await _pontoDao.getByCaminhada(id);
       final List<CoordinateModel> rawPath = [];
       final List<LatLng> mapPath = [];
       
-      if (pontosRes.isSuccess && pontosRes.data != null) {
-        for (var p in pontosRes.data!) {
-          final coord = CoordinateModel.fromMap(p);
-          rawPath.add(coord);
-          
+      for (var p in pontos) {
+        final coord = CoordinateModel.fromMap(p);
+        rawPath.add(coord);
+        
+        if (!coord.isSuspect) {
           final latLng = LatLng(coord.latitude, coord.longitude);
           if (mapPath.isEmpty) {
             mapPath.add(latLng);
@@ -90,12 +103,14 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
         }
       }
 
+      final duracaoMs = await _calcularTempoAtivo(id, data['inicio_ms'] as int, now);
+
       state = state.copyWith(
         caminhadaId: id,
         status: TrackingStatus.paused,
         rawPath: rawPath,
         mapPath: mapPath,
-        duration: Duration(milliseconds: data['tempo_ativo_ms'] as int),
+        duration: Duration(milliseconds: duracaoMs),
         currentPosition: mapPath.isNotEmpty ? mapPath.last : null,
       );
     }
@@ -129,20 +144,36 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
       }
 
       final id = UuidUtils.generateV4();
-      final res = await _localRepo.criarEmAndamento(id);
+      final now = DateTime.now().millisecondsSinceEpoch;
       
-      state = state.copyWith(
-        caminhadaId: res.isSuccess ? id : null,
-        status: TrackingStatus.tracking, 
-        errorMessage: null,
-        duration: Duration.zero,
-        rawPath: [],
-        mapPath: [],
-      );
-
-      if (!res.isSuccess) {
-        AppLogger.e('Falha ao iniciar banco local, rastreando apenas em memória', res.error);
-        // Não notificamos erro impeditivo se pudermos seguir em memória
+      try {
+        await _caminhadaDao.insert({
+          'id': id,
+          'inicio_ms': now,
+          'status': 'em_andamento',
+          'pausada': 0,
+          'tempo_ativo_ms': 0,
+          'atualizada_em_ms': now,
+        });
+        
+        state = state.copyWith(
+          caminhadaId: id,
+          status: TrackingStatus.tracking, 
+          errorMessage: null,
+          duration: Duration.zero,
+          rawPath: [],
+          mapPath: [],
+        );
+      } catch (e) {
+        AppLogger.e('Erro ao iniciar banco local, rastreando apenas em memória', e);
+        state = state.copyWith(
+          caminhadaId: null,
+          status: TrackingStatus.tracking,
+          errorMessage: null,
+          duration: Duration.zero,
+          rawPath: [],
+          mapPath: [],
+        );
       }
       
       _startTimer();
@@ -150,6 +181,7 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
 
     } catch (e) {
       AppLogger.e('Erro ao iniciar rastreamento', e);
+      _stopAllActions();
       state = state.copyWith(status: TrackingStatus.error, errorMessage: 'unexpected_gps_error');
     }
   }
@@ -175,44 +207,41 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
   }
 
   void _handleNewPosition(Position position) {
-    if (position.accuracy > 20) {
-      AppLogger.d('GPS Drift detectado: precisão de ${position.accuracy}m. Ponto ignorado.');
-      return;
-    }
+    final bool isSuspect = position.accuracy > 20;
+    final now = DateTime.now();
 
     final newCoordinate = CoordinateModel(
       latitude: position.latitude,
       longitude: position.longitude,
       timestamp: position.timestamp,
       accuracy: position.accuracy,
+      isSuspect: isSuspect,
     );
 
     _buffer.add({
       'lat': position.latitude,
       'lng': position.longitude,
       'precisao': position.accuracy,
+      'suspeito': isSuspect ? 1 : 0,
       'timestamp_ms': position.timestamp.millisecondsSinceEpoch,
     });
 
-    if (_buffer.length >= 5 || DateTime.now().difference(_lastSave).inSeconds >= 10) {
+    if (_buffer.length >= 5 || now.difference(_lastSave).inSeconds >= 10) {
       _flushBuffer();
     }
 
     final updatedRawPath = [...state.rawPath, newCoordinate];
-    
     List<LatLng> updatedMapPath = state.mapPath;
     final newPoint = LatLng(position.latitude, position.longitude);
     
-    if (state.mapPath.isEmpty) {
-      updatedMapPath = [newPoint];
-    } else {
-      final lastPoint = state.mapPath.last;
-      final distance = Geolocator.distanceBetween(
-        lastPoint.latitude, lastPoint.longitude,
-        newPoint.latitude, newPoint.longitude,
-      );
-      if (distance > 10) {
-        updatedMapPath = [...state.mapPath, newPoint];
+    if (!isSuspect) {
+      if (state.mapPath.isEmpty) {
+        updatedMapPath = [newPoint];
+      } else {
+        final lastPoint = state.mapPath.last;
+        if (Geolocator.distanceBetween(lastPoint.latitude, lastPoint.longitude, newPoint.latitude, newPoint.longitude) > 10) {
+          updatedMapPath = [...state.mapPath, newPoint];
+        }
       }
     }
 
@@ -226,13 +255,16 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
   Future<void> _flushBuffer() async {
     if (_buffer.isEmpty || state.caminhadaId == null) return;
     
+    final id = state.caminhadaId!;
     final pointsToSave = List<Map<String, dynamic>>.from(_buffer);
     _buffer.clear();
     _lastSave = DateTime.now();
 
-    final id = state.caminhadaId!;
-    await _localRepo.gravarPontos(id, pointsToSave);
-    await _localRepo.atualizarProgresso(id, state.duration.inMilliseconds, state.status == TrackingStatus.paused);
+    await _pontoDao.insertBatch(id, pointsToSave);
+    await _caminhadaDao.update({
+      'id': id,
+      'atualizada_em_ms': DateTime.now().millisecondsSinceEpoch,
+    });
   }
 
   void _startTimer() {
@@ -242,22 +274,64 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
     });
   }
 
+  Future<void> pauseTracking() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    _timer?.cancel();
+    _stopAllActions();
+    
+    if (state.caminhadaId != null) {
+      final id = state.caminhadaId!;
+      await _flushBuffer();
+      await _pausaDao.insert({
+        'caminhada_id': id,
+        'inicio_ms': now,
+        'fim_ms': null,
+      });
+      await _caminhadaDao.update({
+        'id': id,
+        'pausada': 1,
+        'atualizada_em_ms': now,
+      });
+    }
+
+    state = state.copyWith(status: TrackingStatus.paused);
+  }
+
+  Future<void> resumeTracking() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    
+    if (state.caminhadaId != null) {
+      final id = state.caminhadaId!;
+      await _pausaDao.finalizarPausa(id, now);
+      await _caminhadaDao.update({
+        'id': id,
+        'pausada': 0,
+        'atualizada_em_ms': now,
+      });
+    }
+
+    _startTimer();
+    _startGpsStream();
+    state = state.copyWith(status: TrackingStatus.tracking);
+  }
+
   Future<void> finishAndSync() async {
     if (state.status == TrackingStatus.syncing) return;
     
+    final now = DateTime.now().millisecondsSinceEpoch;
     _stopAllActions();
     final id = state.caminhadaId;
 
     if (id != null) {
       await _flushBuffer();
-      await _localRepo.finalizar(id);
+      await _finalizeLocal(id, now);
       
       state = state.copyWith(status: TrackingStatus.syncing);
 
       try {
         await _syncService.triggerSync();
-        final check = await _localRepo.obterCaminhada(id);
-        if (check.isSuccess && check.data == null) {
+        final check = await _caminhadaDao.getById(id);
+        if (check == null || check['status'] == 'sincronizada') {
           state = state.copyWith(status: TrackingStatus.finished);
         } else {
           state = state.copyWith(status: TrackingStatus.finished, errorMessage: "offline_sync_pending");
@@ -266,7 +340,6 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
          state = state.copyWith(status: TrackingStatus.finished, errorMessage: "offline_sync_pending");
       }
     } else {
-      // Fallback: tenta enviar direto da memória se o banco falhou
       state = state.copyWith(status: TrackingStatus.syncing);
       try {
         final payload = {
@@ -282,16 +355,34 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
     }
   }
 
-  void pauseTracking() {
-    _timer?.cancel();
-    state = state.copyWith(status: TrackingStatus.paused);
-    _flushBuffer();
+  Future<void> _finalizeLocal(String id, int fimMs) async {
+    final caminhada = await _caminhadaDao.getById(id);
+    if (caminhada == null) return;
+
+    final inicioMs = caminhada['inicio_ms'] as int;
+    final tempoAtivoMs = await _calcularTempoAtivo(id, inicioMs, fimMs);
+
+    await _caminhadaDao.update({
+      'id': id,
+      'fim_ms': fimMs,
+      'status': 'pendente',
+      'tempo_ativo_ms': tempoAtivoMs,
+      'atualizada_em_ms': fimMs,
+    });
   }
 
-  void resumeTracking() {
-    _startTimer();
-    state = state.copyWith(status: TrackingStatus.tracking);
-    _startGpsStream();
+  Future<int> _calcularTempoAtivo(String id, int inicioMs, int fimMs) async {
+    final totalDuration = fimMs - inicioMs;
+    final pausas = await _pausaDao.getByCaminhada(id);
+    
+    int totalPausasMs = 0;
+    for (var pausa in pausas) {
+      final pInicio = pausa['inicio_ms'] as int;
+      final pFim = pausa['fim_ms'] as int? ?? fimMs;
+      totalPausasMs += (pFim - pInicio);
+    }
+    
+    return totalDuration - totalPausasMs;
   }
 
   void _stopAllActions() {
@@ -301,7 +392,17 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
   
   void reset() {
     _stopAllActions();
+    _buffer.clear();
     state = TrackingState();
+  }
+
+  Future<void> discardTracking() async {
+    final id = state.caminhadaId;
+    _stopAllActions();
+    if (id != null) {
+      await _caminhadaDao.deleteById(id);
+    }
+    reset();
   }
 
   @override

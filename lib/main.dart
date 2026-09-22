@@ -1,7 +1,7 @@
 import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/routes/app_router.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
-import 'package:caminhandojuntos/services/background_sync.dart';
+import 'package:caminhandojuntos/services/sync/sync_worker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -11,12 +11,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pt_BR', null);
   
-  // Inicializa o Background Sync
+  // Inicializa o Sincronizador em Segundo Plano
   try {
-    await BackgroundSync.init();
-    await BackgroundSync.schedulePeriodicSync();
+    await SyncWorker.initialize();
+    await SyncWorker.schedulePeriodic();
   } catch (e) {
-    developer.log('Erro ao inicializar Workmanager', error: e);
+    developer.log('Erro ao inicializar SyncWorker', error: e);
   }
 
   runApp(
@@ -37,7 +37,6 @@ class CaminhaJuntosApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'CaminhaJuntos',
       debugShowCheckedModeBanner: false,
-      // Aplica o tema de alto contraste baseado nas preferências do usuário
       theme: accessibility.highContrastEnabled 
           ? AppTheme.highContrastTheme 
           : AppTheme.lightTheme,
