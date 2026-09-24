@@ -1,6 +1,8 @@
+import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BenefitCardWidget extends StatelessWidget {
+class BenefitCardWidget extends ConsumerWidget {
   final IconData icon;
   final String title;
   final String description;
@@ -17,8 +19,8 @@ class BenefitCardWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),

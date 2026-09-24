@@ -1,5 +1,6 @@
 import 'package:caminhandojuntos/providers/user_provider.dart';
 import 'package:caminhandojuntos/providers/tracking_provider.dart';
+import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/botao_grande_widget.dart';
 import 'package:caminhandojuntos/widgets/speakable_widget.dart';
@@ -14,7 +15,7 @@ class SummaryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tracking = ref.watch(trackingProvider);
     final user = ref.watch(userProvider);
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     final String summaryMsg = "Parabéns, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! "
         "Sua caminhada foi validada. Você percorreu ${tracking.validatedDistanceKm.toStringAsFixed(2)} quilômetros "
@@ -162,6 +163,7 @@ class SummaryScreen extends ConsumerWidget {
                       icon: Icons.gps_fixed,
                       iconColor: isHighContrast ? Colors.cyanAccent : AppTheme.primaryColor,
                       iconBgColor: isHighContrast ? Colors.black : const Color(0xFFB1F1C5),
+                      isHighContrast: isHighContrast,
                     ),
                     _SummaryMetricCard(
                       label: "Distância Real",
@@ -170,6 +172,7 @@ class SummaryScreen extends ConsumerWidget {
                       icon: Icons.route,
                       iconColor: isHighContrast ? Colors.yellow : AppTheme.secondaryColor,
                       iconBgColor: isHighContrast ? Colors.black : AppTheme.secondaryContainer,
+                      isHighContrast: isHighContrast,
                     ),
                   ],
                 ),
@@ -217,6 +220,7 @@ class _SummaryMetricCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final Color iconBgColor;
+  final bool isHighContrast;
 
   const _SummaryMetricCard({
     required this.label,
@@ -225,11 +229,11 @@ class _SummaryMetricCard extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.iconBgColor,
+    required this.isHighContrast,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(16),

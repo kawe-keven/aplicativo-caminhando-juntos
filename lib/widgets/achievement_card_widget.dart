@@ -1,9 +1,11 @@
 import 'package:caminhandojuntos/models/achievement.dart';
+import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/speakable_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AchievementCardWidget extends StatelessWidget {
+class AchievementCardWidget extends ConsumerWidget {
   final Achievement achievement;
 
   const AchievementCardWidget({
@@ -12,8 +14,8 @@ class AchievementCardWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final isHighContrast = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
     final String speechText = "Medalha: ${achievement.title}. ${achievement.description}. "
         "${achievement.isUnlocked ? "Já conquistada em ${achievement.dateUnlocked}." : "Falta pouco para conquistar!"}";
 
