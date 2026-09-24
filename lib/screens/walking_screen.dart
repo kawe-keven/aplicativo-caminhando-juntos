@@ -304,82 +304,91 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
 
             Positioned.fill(
               child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          WalkingBackButton(
-                            trackingStatus: trackingState.status,
-                            onPop: _handleBackAction,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.topRight,
-                              child: WalkingInfoPanel(
-                                formattedTime: _formatDuration(trackingState.duration),
-                                distanceMetresOrKm: trackingState.mapPath.isNotEmpty ? 1200.0 : 0.0, 
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      if (trackingState.status == TrackingStatus.error || (trackingState.errorMessage != null && trackingState.errorMessage != "offline_sync_pending"))
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.95),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.error_outline, color: Colors.white),
+                                WalkingBackButton(
+                                  trackingStatus: trackingState.status,
+                                  onPop: _handleBackAction,
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: Text(
-                                    UiTexts.messageForUser(trackingState.errorMessage),
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                  child: Align(
+                                    alignment: Alignment.topRight,
+                                    child: WalkingInfoPanel(
+                                      formattedTime: _formatDuration(trackingState.duration),
+                                      distanceMetresOrKm: trackingState.mapPath.isNotEmpty ? 1200.0 : 0.0, 
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
+
+                            if (trackingState.status == TrackingStatus.error || (trackingState.errorMessage != null && trackingState.errorMessage != "offline_sync_pending"))
+                              Padding(
+                                padding: const EdgeInsets.only(top: 16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withValues(alpha: 0.95),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.error_outline, color: Colors.white),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          UiTexts.messageForUser(trackingState.errorMessage),
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                            const Spacer(),
+                            const SizedBox(height: 16),
+
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 8, left: 4),
+                              child: MapCreditLabel(),
+                            ),
+                            const SizedBox(height: 8),
+
+                            if (trackingState.status == TrackingStatus.syncing)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                child: Center(child: CircularProgressIndicator()),
+                              )
+                            else
+                              WalkingActionButtons(
+                                trackingStatus: trackingState.status,
+                                onPauseToggle: () {
+                                  if (trackingState.status == TrackingStatus.tracking) {
+                                    ref.read(trackingProvider.notifier).pauseTracking();
+                                  } else {
+                                    ref.read(trackingProvider.notifier).resumeTracking();
+                                  }
+                                },
+                                onFinish: _showFinishDialog,
+                                onSOS: _triggerEmergencyCall,
+                              ),
+                          ],
                         ),
-
-                      const Spacer(),
-
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 8, left: 4),
-                        child: MapCreditLabel(),
                       ),
-
-                      if (trackingState.status == TrackingStatus.syncing)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else
-                        WalkingActionButtons(
-                          trackingStatus: trackingState.status,
-                          onPauseToggle: () {
-                            if (trackingState.status == TrackingStatus.tracking) {
-                              ref.read(trackingProvider.notifier).pauseTracking();
-                            } else {
-                              ref.read(trackingProvider.notifier).resumeTracking();
-                            }
-                          },
-                          onFinish: _showFinishDialog,
-                          onSOS: _triggerEmergencyCall,
-                        ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

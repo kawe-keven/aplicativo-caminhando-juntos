@@ -182,19 +182,21 @@ class _BalanceCard extends ConsumerWidget {
             child: Icon(Icons.monetization_on, color: isHighContrast ? Colors.white : AppTheme.tertiaryColor, size: 30),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Seu Saldo Disponível", style: TextStyle(fontSize: 16)),
-              Text(
-                "$coins Moedas", 
-                style: TextStyle(
-                  fontSize: 28, 
-                  fontWeight: FontWeight.bold,
-                  color: isHighContrast ? Colors.white : null,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Seu Saldo Disponível", style: TextStyle(fontSize: 16)),
+                Text(
+                  "$coins Moedas", 
+                  style: TextStyle(
+                    fontSize: 28, 
+                    fontWeight: FontWeight.bold,
+                    color: isHighContrast ? Colors.white : null,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

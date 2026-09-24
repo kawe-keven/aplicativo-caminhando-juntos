@@ -94,7 +94,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
-                            childAspectRatio: 0.7, 
+                            childAspectRatio: 0.62, 
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),
