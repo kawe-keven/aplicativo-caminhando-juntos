@@ -52,26 +52,24 @@ class WalkingActionButtons extends ConsumerWidget {
           isHighContrast: isHighContrast,
         );
 
-        return SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              sosButton,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            sosButton,
+            const SizedBox(height: 12),
+            if (useVerticalLayout) ...[
+              pauseButton,
               const SizedBox(height: 12),
-              if (useVerticalLayout) ...[
-                pauseButton,
-                const SizedBox(height: 12),
-                finishButton,
-              ] else
-                Row(
-                  children: [
-                    Expanded(child: pauseButton),
-                    const SizedBox(width: 12),
-                    Expanded(child: finishButton),
-                  ],
-                ),
-            ],
-          ),
+              finishButton,
+            ] else
+              Row(
+                children: [
+                  Expanded(child: pauseButton),
+                  const SizedBox(width: 12),
+                  Expanded(child: finishButton),
+                ],
+              ),
+          ],
         );
       },
     );

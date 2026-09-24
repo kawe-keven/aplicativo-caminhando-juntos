@@ -22,7 +22,7 @@ class AchievementCardWidget extends ConsumerWidget {
     return Speakable(
       text: speechText,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isHighContrast ? Colors.black : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -39,8 +39,8 @@ class AchievementCardWidget extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
                 color: isHighContrast 
                   ? (achievement.isUnlocked ? Colors.yellow : Colors.white12) 
@@ -49,7 +49,7 @@ class AchievementCardWidget extends ConsumerWidget {
               ),
               child: Icon(
                 achievement.icon,
-                size: 40,
+                size: 30,
                 color: isHighContrast 
                   ? (achievement.isUnlocked ? Colors.black : Colors.white38) 
                   : (achievement.iconColor ?? Colors.grey[600]),
@@ -60,21 +60,25 @@ class AchievementCardWidget extends ConsumerWidget {
                 Text(
                   achievement.title,
                   textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: isHighContrast ? Colors.white : AppTheme.primaryColor,
                     height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   achievement.description,
                   textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 12,
                     color: isHighContrast ? Colors.white70 : AppTheme.onSurfaceVariant,
-                    height: 1.2,
+                    height: 1.1,
                   ),
                 ),
               ],
@@ -82,7 +86,7 @@ class AchievementCardWidget extends ConsumerWidget {
             if (achievement.isUnlocked)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 6),
                 decoration: BoxDecoration(
                   color: isHighContrast ? Colors.yellow : const Color(0xFFB1F1C5),
                   borderRadius: BorderRadius.circular(20),
@@ -92,14 +96,14 @@ class AchievementCardWidget extends ConsumerWidget {
                   children: [
                     Icon(
                       Icons.check_circle, 
-                      size: 20, 
+                      size: 16, 
                       color: isHighContrast ? Colors.black : AppTheme.primaryColor,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       achievement.dateUnlocked ?? "Conquistada",
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: isHighContrast ? Colors.black : AppTheme.primaryColor,
                       ),
@@ -116,7 +120,7 @@ class AchievementCardWidget extends ConsumerWidget {
                       Text(
                         "${(achievement.progress * 100).toInt()}%",
                         style: TextStyle(
-                          fontSize: 12, 
+                          fontSize: 11, 
                           fontWeight: FontWeight.bold, 
                           color: isHighContrast ? Colors.yellow : AppTheme.secondaryColor,
                         ),
@@ -130,19 +134,19 @@ class AchievementCardWidget extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                             style: TextStyle(
-                              fontSize: 12, 
+                              fontSize: 11, 
                               color: isHighContrast ? Colors.white70 : AppTheme.onSurfaceVariant,
                             ),
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(6),
                     child: LinearProgressIndicator(
                       value: achievement.progress,
-                      minHeight: 8,
+                      minHeight: 6,
                       backgroundColor: isHighContrast ? Colors.white12 : Colors.grey[200],
                       color: isHighContrast 
                         ? Colors.yellow 

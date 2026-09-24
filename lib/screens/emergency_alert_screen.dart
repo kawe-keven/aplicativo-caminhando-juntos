@@ -102,51 +102,51 @@ class _EmergencyAlertScreenState extends State<EmergencyAlertScreen>
           ),
         ),
         child: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Ícone Pulsante
-              ScaleTransition(
-                scale: Tween(begin: 0.9, end: 1.1).animate(_pulseController),
-                child: Container(
-                  padding: const EdgeInsets.all(40),
-                  decoration: const BoxDecoration(
-                    color: Colors.white24,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.emergency,
-                    size: 120,
-                    color: Colors.white,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Ícone Pulsante
+                ScaleTransition(
+                  scale: Tween(begin: 0.9, end: 1.1).animate(_pulseController),
+                  child: Container(
+                    padding: const EdgeInsets.all(40),
+                    decoration: const BoxDecoration(
+                      color: Colors.white24,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.emergency,
+                      size: 120,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 48),
-              Text(
-                "EMERGÊNCIA ATIVA",
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  "LIGANDO PARA:\n${widget.contactName.toUpperCase()}",
+                const SizedBox(height: 48),
+                Text(
+                  "EMERGÊNCIA ATIVA",
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w900,
                       ),
                 ),
-              ),
-              const Spacer(),
-              // Botão Cancelar Gigante
-              Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: ElevatedButton.icon(
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    "LIGANDO PARA:\n${widget.contactName.toUpperCase()}",
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 48),
+                // Botão Cancelar Gigante
+                ElevatedButton.icon(
                   onPressed: _cancelEmergency,
                   icon: const Icon(Icons.close, size: 40),
                   label: const Text("CANCELAR AGORA"),
@@ -163,9 +163,9 @@ class _EmergencyAlertScreenState extends State<EmergencyAlertScreen>
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
