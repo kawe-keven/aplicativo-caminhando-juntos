@@ -30,12 +30,16 @@ class MapTileCache {
     try {
       return await openDatabase(
         path,
-        version: 2,
+        version: 3, // Incrementado para suportar coluna 'provedor' na chave primária
+        onConfigure: (db) async {
+          await db.rawQuery('PRAGMA journal_mode=WAL;');
+          await db.rawQuery('PRAGMA synchronous=NORMAL;');
+        },
         onCreate: (db, version) async {
           await _createTables(db);
         },
         onUpgrade: (db, oldVersion, newVersion) async {
-          if (oldVersion < 2) {
+          if (oldVersion < 3) {
             await db.execute('DROP TABLE IF EXISTS tiles');
             await _createTables(db);
           }
@@ -54,27 +58,29 @@ class MapTileCache {
   Future<void> _createTables(Database db) async {
     await db.execute('''
       CREATE TABLE tiles (
-        estilo TEXT,
-        z INTEGER,
-        x INTEGER,
-        y INTEGER,
+        provedor TEXT NOT NULL,
+        estilo TEXT NOT NULL,
+        z INTEGER NOT NULL,
+        x INTEGER NOT NULL,
+        y INTEGER NOT NULL,
         dados BLOB NOT NULL,
-        tamanho INTEGER,
-        criado_ms INTEGER,
-        acessado_ms INTEGER,
-        PRIMARY KEY (estilo, z, x, y)
+        tamanho INTEGER NOT NULL,
+        criado_ms INTEGER NOT NULL,
+        acessado_ms INTEGER NOT NULL,
+        PRIMARY KEY (provedor, estilo, z, x, y)
       )
     ''');
     await db.execute('CREATE INDEX idx_tiles_acessado ON tiles(acessado_ms)');
+    await db.execute('CREATE INDEX idx_tiles_provedor ON tiles(provedor, estilo)');
   }
 
-  Future<Uint8List?> getTile(String estilo, int z, int x, int y) async {
+  Future<Uint8List?> getTile(String provedor, String estilo, int z, int x, int y) async {
     try {
       final db = await database;
       final maps = await db.query(
         'tiles',
-        where: 'estilo = ? AND z = ? AND x = ? AND y = ?',
-        whereArgs: [estilo, z, x, y],
+        where: 'provedor = ? AND estilo = ? AND z = ? AND x = ? AND y = ?',
+        whereArgs: [provedor, estilo, z, x, y],
       );
 
       if (maps.isNotEmpty) {
@@ -82,18 +88,23 @@ class MapTileCache {
         final tamanho = maps.first['tamanho'] as int;
         
         if (dados.length != tamanho) {
-          AppLogger.e('Cache corrompido (tamanho): $estilo/$z/$x/$y');
+          AppLogger.e('Cache corrompido (tamanho): $provedor/$estilo/$z/$x/$y');
+          await db.delete(
+            'tiles',
+            where: 'provedor = ? AND estilo = ? AND z = ? AND x = ? AND y = ?',
+            whereArgs: [provedor, estilo, z, x, y],
+          );
           return null;
         }
 
         final now = DateTime.now().millisecondsSinceEpoch;
-        db.update(
+        await db.update(
           'tiles',
           {'acessado_ms': now},
-          where: 'estilo = ? AND z = ? AND x = ? AND y = ?',
-          whereArgs: [estilo, z, x, y],
+          where: 'provedor = ? AND estilo = ? AND z = ? AND x = ? AND y = ?',
+          whereArgs: [provedor, estilo, z, x, y],
         );
-        return maps.first['dados'] as Uint8List;
+        return dados;
       }
     } catch (e) {
       AppLogger.e('Erro ao ler tile do cache', e);
@@ -101,70 +112,76 @@ class MapTileCache {
     return null;
   }
 
-  Future<bool> isTileExpired(String estilo, int z, int x, int y) async {
+  Future<bool> isTileExpired(String provedor, String estilo, int z, int x, int y, {int maxAgeDays = kMaxAgeDays}) async {
     try {
       final db = await database;
       final maps = await db.query(
         'tiles',
         columns: ['criado_ms'],
-        where: 'estilo = ? AND z = ? AND x = ? AND y = ?',
-        whereArgs: [estilo, z, x, y],
+        where: 'provedor = ? AND estilo = ? AND z = ? AND x = ? AND y = ?',
+        whereArgs: [provedor, estilo, z, x, y],
       );
 
       if (maps.isNotEmpty) {
         final criadoMs = maps.first['criado_ms'] as int;
         final age = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(criadoMs));
-        return age.inDays >= kMaxAgeDays;
+        return age.inDays >= maxAgeDays;
       }
     } catch (_) {}
     return true;
   }
 
-  Future<void> putTile(String estilo, int z, int x, int y, Uint8List dados) async {
+  Future<void> putTile(String provedor, String estilo, int z, int x, int y, Uint8List dados) async {
     try {
       final db = await database;
       final now = DateTime.now().millisecondsSinceEpoch;
-      await db.insert(
-        'tiles',
-        {
-          'estilo': estilo,
-          'z': z,
-          'x': x,
-          'y': y,
-          'dados': dados,
-          'tamanho': dados.length,
-          'criado_ms': now,
-          'acessado_ms': now,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      _checkSizeAndCleanup();
+      
+      await db.transaction((txn) async {
+        await txn.insert(
+          'tiles',
+          {
+            'provedor': provedor,
+            'estilo': estilo,
+            'z': z,
+            'x': x,
+            'y': y,
+            'dados': dados,
+            'tamanho': dados.length,
+            'criado_ms': now,
+            'acessado_ms': now,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      });
+
+      await _checkSizeAndCleanup(db);
     } catch (e) {
       if (e.toString().contains('SQLITE_FULL')) {
-        _cleanupLRU(targetSize: (kMaxCacheSize * 0.5).toInt());
+        try {
+          final db = await database;
+          await _cleanupLRU(db, targetSize: (kMaxCacheSize * 0.5).toInt());
+        } catch (_) {}
       }
       AppLogger.e('Erro ao gravar tile no cache', e);
     }
   }
 
-  Future<void> _checkSizeAndCleanup() async {
+  Future<void> _checkSizeAndCleanup(Database db) async {
     try {
-      final db = await database;
       final result = await db.rawQuery('SELECT SUM(tamanho) as total FROM tiles');
       final total = result.first['total'] as int? ?? 0;
       if (total > kMaxCacheSize) {
-        await _cleanupLRU();
+        await _cleanupLRU(db);
       }
     } catch (_) {}
   }
 
-  Future<void> _cleanupLRU({int? targetSize}) async {
+  Future<void> _cleanupLRU(Database db, {int? targetSize}) async {
     try {
-      final db = await database;
       final limit = targetSize ?? (kMaxCacheSize * 0.8).toInt();
       
       await db.transaction((txn) async {
-        final rows = await txn.query('tiles', columns: ['estilo', 'z', 'x', 'y', 'tamanho'], orderBy: 'acessado_ms ASC');
+        final rows = await txn.query('tiles', columns: ['provedor', 'estilo', 'z', 'x', 'y', 'tamanho'], orderBy: 'acessado_ms ASC');
         int currentTotal = 0;
         for (var row in rows) {
           currentTotal += row['tamanho'] as int;
@@ -177,8 +194,8 @@ class MapTileCache {
           if (toDelete <= 0) break;
           await txn.delete(
             'tiles',
-            where: 'estilo = ? AND z = ? AND x = ? AND y = ?',
-            whereArgs: [row['estilo'], row['z'], row['x'], row['y']],
+            where: 'provedor = ? AND estilo = ? AND z = ? AND x = ? AND y = ?',
+            whereArgs: [row['provedor'], row['estilo'], row['z'], row['x'], row['y']],
           );
           toDelete -= row['tamanho'] as int;
         }

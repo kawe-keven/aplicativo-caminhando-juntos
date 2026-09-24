@@ -29,6 +29,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
   ProviderSubscription? _trackingSubscription;
   LatLng? _initialMapCenter;
   bool _isMovingToPosition = false;
+  bool _isFollowingUser = true;
   
   @override
   void initState() {
@@ -38,7 +39,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     _trackingSubscription = ref.listenManual(
       trackingProvider.select((s) => s.currentPosition),
       (previous, next) {
-        if (next != null && previous != next && mounted) {
+        if (next != null && previous != next && mounted && _isFollowingUser) {
           _mapController.move(next, _mapController.camera.zoom);
         }
       },
@@ -210,9 +211,6 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final trackingState = ref.watch(trackingProvider);
-    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
-
     if (_initialMapCenter == null) {
       return Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -223,6 +221,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     }
 
     final bool isFallbackBrazil = _initialMapCenter!.latitude == -14.2350 && _initialMapCenter!.longitude == -51.9253;
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
     return PopScope(
       canPop: false,
@@ -234,26 +233,37 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         body: Stack(
           children: [
+            // 1. Mapa Otimizado (Não reconstrói a árvore inteira a cada tick de timer ou GPS)
             Positioned.fill(
-              child: Container(
-                color: isHighContrast ? Colors.grey[900] : Colors.grey[200],
-                child: FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: _initialMapCenter!,
-                    initialZoom: isFallbackBrazil ? 4 : 17,
-                    onMapReady: () {
-                      final realPos = ref.read(trackingProvider).currentPosition;
-                      if (realPos != null && isFallbackBrazil) {
-                        _mapController.move(realPos, 17);
-                      }
-                    },
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _initialMapCenter!,
+                  initialZoom: isFallbackBrazil ? 4 : 17,
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.all,
                   ),
-                  children: [
-                    AppTileLayer.build(isHighContrast: isHighContrast),
-                    Consumer(builder: (context, ref, _) {
-                      final trackingData = ref.watch(trackingProvider);
-                      final pos = trackingData.currentPosition;
+                  onPositionChanged: (camera, hasGesture) {
+                    if (hasGesture && _isFollowingUser) {
+                      setState(() {
+                        _isFollowingUser = false;
+                      });
+                    }
+                  },
+                  onMapReady: () {
+                    final realPos = ref.read(trackingProvider).currentPosition;
+                    if (realPos != null && isFallbackBrazil) {
+                      _mapController.move(realPos, 17);
+                    }
+                  },
+                ),
+                children: [
+                  AppTileLayer.build(isHighContrast: isHighContrast),
+                  // Marker Layer Otimizado (Reconstrói apenas quando currentPosition muda)
+                  Consumer(
+                    key: const ValueKey('marker_layer_consumer'),
+                    builder: (context, ref, _) {
+                      final pos = ref.watch(trackingProvider.select((s) => s.currentPosition));
                       
                       if (pos != null && !_isMovingToPosition) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -279,8 +289,12 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                           )
                         ],
                       );
-                    }),
-                    Consumer(builder: (context, ref, _) {
+                    },
+                  ),
+                  // Polyline Layer Otimizado (Reconstrói apenas quando mapPath muda)
+                  Consumer(
+                    key: const ValueKey('polyline_layer_consumer'),
+                    builder: (context, ref, _) {
                       final path = ref.watch(trackingProvider.select((s) => s.mapPath));
                       if (path.isEmpty) return const SizedBox.shrink();
                       
@@ -296,99 +310,145 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                           )
                         ],
                       );
-                    }),
-                  ],
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // 2. Botão Flutuante de Re-centralizar
+            if (!_isFollowingUser)
+              Positioned(
+                right: 16,
+                bottom: 180,
+                child: FloatingActionButton.small(
+                  heroTag: 'recenter_map',
+                  backgroundColor: isHighContrast ? Colors.black : Theme.of(context).colorScheme.primary,
+                  foregroundColor: isHighContrast ? Colors.white : Theme.of(context).colorScheme.onPrimary,
+                  onPressed: () {
+                    setState(() {
+                      _isFollowingUser = true;
+                    });
+                    final currentPos = ref.read(trackingProvider).currentPosition;
+                    if (currentPos != null) {
+                      _mapController.move(currentPos, 17);
+                    }
+                  },
+                  child: const Icon(Icons.my_location),
+                ),
+              ),
+
+            // 3. Painel Superior (Isolado com Consumer para atualizar timer sem reconstruir o mapa)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final status = ref.watch(trackingProvider.select((s) => s.status));
+                      final duration = ref.watch(trackingProvider.select((s) => s.duration));
+                      final hasPath = ref.watch(trackingProvider.select((s) => s.mapPath.isNotEmpty));
+                      final errorMessage = ref.watch(trackingProvider.select((s) => s.errorMessage));
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              WalkingBackButton(
+                                trackingStatus: status,
+                                onPop: _handleBackAction,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.topRight,
+                                  child: WalkingInfoPanel(
+                                    formattedTime: _formatDuration(duration),
+                                    distanceMetresOrKm: hasPath ? 1200.0 : 0.0, 
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (status == TrackingStatus.error || (errorMessage != null && errorMessage != "offline_sync_pending"))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withValues(alpha: 0.95),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.error_outline, color: Colors.white),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        UiTexts.messageForUser(errorMessage),
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
 
-            Positioned.fill(
+            // 4. Painel Inferior (Isolado com Consumer para status e botões de ação)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
               child: SafeArea(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                WalkingBackButton(
-                                  trackingStatus: trackingState.status,
-                                  onPop: _handleBackAction,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Align(
-                                    alignment: Alignment.topRight,
-                                    child: WalkingInfoPanel(
-                                      formattedTime: _formatDuration(trackingState.duration),
-                                      distanceMetresOrKm: trackingState.mapPath.isNotEmpty ? 1200.0 : 0.0, 
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final status = ref.watch(trackingProvider.select((s) => s.status));
 
-                            if (trackingState.status == TrackingStatus.error || (trackingState.errorMessage != null && trackingState.errorMessage != "offline_sync_pending"))
-                              Padding(
-                                padding: const EdgeInsets.only(top: 16),
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.95),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.error_outline, color: Colors.white),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          UiTexts.messageForUser(trackingState.errorMessage),
-                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                            const Spacer(),
-                            const SizedBox(height: 16),
-
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 6, left: 4),
+                            child: MapCreditLabel(),
+                          ),
+                          if (status == TrackingStatus.syncing)
                             const Padding(
-                              padding: EdgeInsets.only(bottom: 8, left: 4),
-                              child: MapCreditLabel(),
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(child: CircularProgressIndicator()),
+                            )
+                          else
+                            WalkingActionButtons(
+                              trackingStatus: status,
+                              onPauseToggle: () {
+                                if (status == TrackingStatus.tracking) {
+                                  ref.read(trackingProvider.notifier).pauseTracking();
+                                } else {
+                                  ref.read(trackingProvider.notifier).resumeTracking();
+                                }
+                              },
+                              onFinish: _showFinishDialog,
+                              onSOS: _triggerEmergencyCall,
                             ),
-                            const SizedBox(height: 8),
-
-                            if (trackingState.status == TrackingStatus.syncing)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                                child: Center(child: CircularProgressIndicator()),
-                              )
-                            else
-                              WalkingActionButtons(
-                                trackingStatus: trackingState.status,
-                                onPauseToggle: () {
-                                  if (trackingState.status == TrackingStatus.tracking) {
-                                    ref.read(trackingProvider.notifier).pauseTracking();
-                                  } else {
-                                    ref.read(trackingProvider.notifier).resumeTracking();
-                                  }
-                                },
-                                onFinish: _showFinishDialog,
-                                onSOS: _triggerEmergencyCall,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),

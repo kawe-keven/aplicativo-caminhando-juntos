@@ -11,8 +11,11 @@ class MapboxConfig {
   static const String urlTemplate =
       'https://api.mapbox.com/styles/v1/{id}/tiles/512/{z}/{x}/{y}@2x?access_token={accessToken}';
 
-  // Getter para validar se o token do Mapbox foi preenchido via dart-define
+  // Getter para validar se o token do Mapbox foi preenchido corretamente e começa com 'pk.'
   static bool get mapboxTokenValido {
-    return kMapboxAccessToken.isNotEmpty && kMapboxAccessToken.startsWith('pk.');
+    return kMapboxAccessToken.isNotEmpty &&
+        kMapboxAccessToken.startsWith('pk.') &&
+        !kMapboxAccessToken.contains('COLE_') &&
+        !kMapboxAccessToken.contains('SUA_CHAVE');
   }
 }

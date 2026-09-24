@@ -7,14 +7,14 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AppTileLayer {
-  static const bool kUsarCacheMapa = true; // Passo 3: Ativado após correções
+  static const bool kUsarCacheMapa = true;
   static bool _fallbackForced = false;
 
-  /// Força o uso do NetworkTileProvider se o cache próprio falhar seguidamente.
+  /// Força o uso imediato do OpenStreetMap se o cache ou Mapbox falharem criticamente.
   static void forceNetworkFallback() {
     if (!_fallbackForced) {
       if (kDebugMode) {
-        debugPrint('[TileLayer] Falha crítica no cache próprio. Alternando para NetworkTileProvider.');
+        debugPrint('[TileLayer] Falha crítica no Mapbox ou token inválido. Alternando permanentemente para OpenStreetMap.');
       }
       _fallbackForced = true;
     }
@@ -28,7 +28,7 @@ class AppTileLayer {
   }) {
     final tokenValido = MapboxConfig.mapboxTokenValido;
 
-    if (!tokenValido) {
+    if (!tokenValido || _fallbackForced) {
       if (kDebugMode) {
         debugPrint('AVISO: Token do Mapbox inválido ou ausente! Usando OpenStreetMap como fallback.');
       }
@@ -39,13 +39,13 @@ class AppTileLayer {
         userAgentPackageName: MapboxConfig.userAgentPackageName,
         maxZoom: 19,
         minZoom: 2,
-        tileProvider: (kUsarCacheMapa && !_fallbackForced) 
-            ? LocalTileProvider(estilo: 'osm') 
+        tileProvider: kUsarCacheMapa 
+            ? LocalTileProvider(provedor: 'osm', estilo: 'osm') 
             : NetworkTileProvider(),
         errorTileCallback: (tile, error, stackTrace) {
-          // Trata erro de tile sem crashar o app e sem spam de logs
+          // Trata erro de tile sem crashar o app
         },
-        tileBuilder: null, // Removido pseudo-HC via ColorFiltered
+        tileBuilder: null,
       );
     }
 
@@ -62,19 +62,19 @@ class AppTileLayer {
       minZoom: 2,
       tileSize: 512, // Otimizado conforme plano
       zoomOffset: -1, // Necessário para tiles de 512px no flutter_map
-      tileProvider: (kUsarCacheMapa && !_fallbackForced) 
-          ? LocalTileProvider(estilo: MapboxConfig.style) 
+      tileProvider: kUsarCacheMapa 
+          ? LocalTileProvider(provedor: 'mapbox', estilo: MapboxConfig.style) 
           : NetworkTileProvider(),
       errorTileCallback: (tile, error, stackTrace) {
-        // Trata erro de tile sem crashar o app e sem spam de logs
+        // Trata erro de tile sem crashar o app
       },
-      tileBuilder: null, // Removido pseudo-HC via ColorFiltered
+      tileBuilder: null,
     );
   }
 
   /// Retorna a lista de atribuições obrigatórias conforme ToS do Mapbox.
   static List<SourceAttribution> getAttributions(BuildContext context) {
-    if (!MapboxConfig.mapboxTokenValido) {
+    if (!MapboxConfig.mapboxTokenValido || _fallbackForced) {
       return [
         TextSourceAttribution(
           '© OpenStreetMap contributors',
