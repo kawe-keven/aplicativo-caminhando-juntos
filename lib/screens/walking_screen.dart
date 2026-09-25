@@ -473,7 +473,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
             if (!_isFollowingUser)
               Positioned(
                 right: 16,
-                bottom: 180,
+                bottom: 230,
                 child: FloatingActionButton.small(
                   heroTag: 'recenter_map',
                   backgroundColor: isHighContrast ? Colors.black : Theme.of(context).colorScheme.primary,

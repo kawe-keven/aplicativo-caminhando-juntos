@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -33,7 +34,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final weather = ref.watch(weatherProvider);
     final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
 
-    final String welcomeMsg = "Bom dia, ${user.name.isEmpty ? 'Seu Antônio' : user.name}. "
+    final hour = DateTime.now().hour;
+    final String greeting;
+    final String emoji;
+    final IconData weatherIcon;
+
+    if (hour >= 5 && hour < 12) {
+      greeting = "Bom dia";
+      emoji = "☀️";
+      weatherIcon = Icons.sunny;
+    } else if (hour >= 12 && hour < 18) {
+      greeting = "Boa tarde";
+      emoji = "🌤️";
+      weatherIcon = Icons.wb_sunny;
+    } else {
+      greeting = "Boa noite";
+      emoji = "🌙";
+      weatherIcon = Icons.nights_stay;
+    }
+
+    final String welcomeMsg = "$greeting, ${user.name.isEmpty ? 'Seu Antônio' : user.name}. "
         "Seu saldo atual é de ${dashboardState.progress.coins} moedas. "
         "Hoje você já completou ${dashboardState.progress.steps} passos de sua meta.";
 
@@ -57,7 +77,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       sliver: SliverList(
                         delegate: SliverChildListDelegate([
                           Text(
-                            "Bom dia, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! ☀️",
+                            "$greeting, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! $emoji",
                             key: const ValueKey('welcome_text'),
                             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                               color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.primary,
@@ -67,7 +87,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           Row(
                             key: const ValueKey('weather_row'),
                             children: [
-                              Icon(Icons.sunny, color: isHighContrast ? Colors.yellow : Theme.of(context).colorScheme.secondary, size: 20),
+                              Icon(weatherIcon, color: isHighContrast ? Colors.yellow : Theme.of(context).colorScheme.secondary, size: 20),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -391,11 +411,18 @@ class _StartWalkingButton extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 72),
           child: ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (caminhadaEmAndamento) {
                 context.go('/walking');
               } else {
-                context.push('/permission');
+                final hasPermission = await Permission.location.isGranted;
+                if (context.mounted) {
+                  if (hasPermission) {
+                    context.go('/walking');
+                  } else {
+                    context.push('/permission');
+                  }
+                }
               }
             },
             style: ElevatedButton.styleFrom(
