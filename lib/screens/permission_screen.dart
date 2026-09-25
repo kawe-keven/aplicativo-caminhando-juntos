@@ -16,6 +16,21 @@ class PermissionScreen extends StatefulWidget {
 class _PermissionScreenState extends State<PermissionScreen> {
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingPermission();
+  }
+
+  Future<void> _checkExistingPermission() async {
+    try {
+      final status = await Permission.location.status;
+      if (status.isGranted && mounted) {
+        context.pushReplacement('/walking');
+      }
+    } catch (_) {}
+  }
+
   Future<void> _requestPermissions() async {
     setState(() => _isLoading = true);
     
