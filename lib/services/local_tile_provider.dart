@@ -39,10 +39,10 @@ class CircuitBreakerState {
   void recordFailure() {
     consecutiveFailures++;
     failureCountTotal++;
-    if (state == 'halfOpen' || consecutiveFailures >= 3) {
+    if (state == 'halfOpen' || consecutiveFailures >= 10) {
       state = 'open';
-      // Backoff exponencial com jitter: base 10s * 2^(failures-3), máximo 60s
-      final exp = min(consecutiveFailures - 3, 3);
+      // Backoff exponencial com jitter: base 10s * 2^(failures-10), máximo 60s
+      final exp = min(consecutiveFailures - 10, 3);
       final backoffSeconds = min(10 * pow(2, max(exp, 0)).toInt(), 60);
       final jitter = Random().nextInt(5);
       openUntil = DateTime.now().add(Duration(seconds: backoffSeconds + jitter));
@@ -66,10 +66,9 @@ class LocalTileProvider extends TileProvider {
   };
 
   static final HttpClient _httpClient = HttpClient()
-    ..connectionTimeout = const Duration(seconds: 6)
+    ..connectionTimeout = const Duration(seconds: 10)
+    ..maxConnectionsPerHost = 10
     ..autoUncompress = true; 
-  static const int _maxConcurrent = 6;
-  static int _activeRequests = 0;
   
   static DateTime _lastLogTime = DateTime.fromMillisecondsSinceEpoch(0);
   static int diagCount = 0;
@@ -81,7 +80,7 @@ class LocalTileProvider extends TileProvider {
   static int authErrorsCount = 0;
   static int notFoundErrorsCount = 0;
 
-  LocalTileProvider({required this.provedor, required this.estilo});
+  LocalTileProvider({this.provedor = 'osm', this.estilo = 'osm'});
 
   static void logDiagnostic(String msg) {
     if (kDebugMode) {
@@ -185,15 +184,6 @@ class _LocalTileImageProvider extends ImageProvider<_LocalTileImageProvider> {
       }
     } catch (_) {}
 
-    // 4. Limite de Concorrência
-    if (LocalTileProvider._activeRequests >= LocalTileProvider._maxConcurrent) {
-      if (cachedData != null && _isValidImage(cachedData)) {
-        return await decode(await ui.ImmutableBuffer.fromUint8List(cachedData));
-      }
-      return await _emptyTile(decode);
-    }
-
-    LocalTileProvider._activeRequests++;
     final stopwatch = Stopwatch()..start();
 
     try {
@@ -216,7 +206,7 @@ class _LocalTileImageProvider extends ImageProvider<_LocalTileImageProvider> {
         request.headers.set(HttpHeaders.userAgentHeader, 'caminhandojuntos');
       }
       
-      final response = await request.close().timeout(const Duration(seconds: 6));
+      final response = await request.close().timeout(const Duration(seconds: 10));
       final contentType = response.headers.contentType?.toString() ?? 'unknown';
       final bytes = await consolidateHttpClientResponseBytes(response);
       stopwatch.stop();
@@ -244,7 +234,6 @@ class _LocalTileImageProvider extends ImageProvider<_LocalTileImageProvider> {
         case TileHttpResultType.notFound:
           LocalTileProvider.notFoundErrorsCount++;
           LocalTileProvider.logDiagnostic('[$provedor] NOT FOUND (404) z=$z x=$x y=$y. URL template ou tile inexistente.');
-          // 404 não conta como falha de rede transitória para o circuit breaker
           break;
 
         case TileHttpResultType.transientError:
@@ -256,8 +245,6 @@ class _LocalTileImageProvider extends ImageProvider<_LocalTileImageProvider> {
       stopwatch.stop();
       cb.recordFailure();
       LocalTileProvider.logDiagnostic('[$provedor] EXCEPTION z=$z x=$x y=$y: $e (failures=${cb.consecutiveFailures})');
-    } finally {
-      LocalTileProvider._activeRequests--;
     }
 
     if (cachedData != null && _isValidImage(cachedData)) {
@@ -273,7 +260,7 @@ class _LocalTileImageProvider extends ImageProvider<_LocalTileImageProvider> {
     if (statusCode == 404) {
       return TileHttpResultType.notFound;
     }
-    if (statusCode == 200 && contentType.startsWith('image/') && _isValidImage(bytes)) {
+    if (statusCode == 200 && _isValidImage(bytes)) {
       return TileHttpResultType.success;
     }
     return TileHttpResultType.transientError;
@@ -281,25 +268,21 @@ class _LocalTileImageProvider extends ImageProvider<_LocalTileImageProvider> {
 
   bool _isValidImage(Uint8List bytes) {
     if (bytes.length < 4) return false;
-    // PNG
-    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x43 ||
-        (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x42) ||
-        (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x4E) ||
-        (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47)) {
+    // PNG (\x89PNG)
+    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
       return true;
     }
-    // JPEG
+    // JPEG (\xFF\xD8\xFF)
     if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
       return true;
     }
-    // WebP
+    // WebP (RIFF....WEBP)
     if (bytes.length >= 12 &&
         bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 &&
-        bytes[8] == 0x52 && bytes[9] == 0x49 && bytes[10] == 0x46 && bytes[11] == 0x46 ||
-        (bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50)) {
+        bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) {
       return true;
     }
-    // Verificação relaxada por magic number primário PNG/JPEG/GIF
+    // Fallback por magic bytes PNG/JPEG
     if (bytes[0] == 0x89 || (bytes[0] == 0xFF && bytes[1] == 0xD8)) {
       return true;
     }
