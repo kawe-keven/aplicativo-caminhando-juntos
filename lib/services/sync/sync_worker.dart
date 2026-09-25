@@ -98,7 +98,7 @@ class SyncWorker {
           Uri.parse('$kBackendUrl/api/caminhada/sync'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(payload),
-        ).timeout(const Duration(seconds: 30));
+        ).timeout(const Duration(seconds: 5));
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
           await _caminhadaDao.update({...caminhada, 'status': 'sincronizada'});

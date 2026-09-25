@@ -45,6 +45,26 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     state = state.copyWith(progress: state.progress.copyWith(steps: state.progress.steps + count));
   }
 
+  void addCompletedWalk({
+    required double distanceKm,
+    required int coins,
+    required int durationMinutes,
+    int steps = 0,
+  }) {
+    final current = state.progress;
+    final estimatedSteps = steps > 0 ? steps : (distanceKm * 1300).round();
+    final estimatedCalories = (distanceKm * 60).round();
+    state = state.copyWith(
+      progress: current.copyWith(
+        steps: current.steps + estimatedSteps,
+        coins: current.coins + coins,
+        distanceKm: double.parse((current.distanceKm + distanceKm).toStringAsFixed(2)),
+        durationMinutes: current.durationMinutes + durationMinutes,
+        calories: current.calories + estimatedCalories,
+      ),
+    );
+  }
+
   /// Requisito de Segurança (Escopo 6): Proteção contra cliques duplos (Rate Limiting UI)
   Future<bool> redeemReward(int cost) async {
     if (state.isRedeeming) return false; // Bloqueia cliques simultâneos

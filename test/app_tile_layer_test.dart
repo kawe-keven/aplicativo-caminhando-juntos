@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:caminhandojuntos/widgets/app_tile_layer.dart';
-import 'package:caminhandojuntos/config/mapbox_config.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -14,14 +13,15 @@ void main() {
     });
 
     test('Attributions return expected sources', () {
-      final attributions = AppTileLayer.getAttributions(MockBuildContext());
+      final attributions = AppTileLayer.getAttributions(const MockBuildContext());
       expect(attributions, isNotEmpty);
     });
   });
 }
 
 class MockBuildContext extends StatelessWidget implements BuildContext {
+  const MockBuildContext({super.key});
+
   @override
-  // TODO: implement buildContext
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
