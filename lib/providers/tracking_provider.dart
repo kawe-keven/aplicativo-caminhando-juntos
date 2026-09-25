@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:caminhandojuntos/models/coordinate_model.dart';
 import 'package:caminhandojuntos/models/tracking_state.dart';
-import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/services/caminhada_api_client.dart';
 import 'package:caminhandojuntos/services/local/caminhada_dao.dart';
 import 'package:caminhandojuntos/services/local/ponto_dao.dart';
@@ -27,7 +26,7 @@ final trackingProvider = StateNotifierProvider<TrackingNotifier, TrackingState>(
   final pausaDao = ref.watch(pausaDaoProvider);
   final syncService = ref.watch(syncServiceProvider);
   final apiClient = ref.watch(caminhadaApiClientProvider);
-  return TrackingNotifier(caminhadaDao, pontoDao, pausaDao, syncService, apiClient, ref);
+  return TrackingNotifier(caminhadaDao, pontoDao, pausaDao, syncService, apiClient);
 });
 
 class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingObserver {
@@ -36,7 +35,6 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
   final PausaDao _pausaDao;
   final SyncService _syncService;
   final CaminhadaApiClient _apiClient;
-  final Ref _ref;
   
   StreamSubscription<Position>? _positionSubscription;
   Timer? _timer;
@@ -49,8 +47,7 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
     this._pontoDao, 
     this._pausaDao, 
     this._syncService, 
-    this._apiClient,
-    this._ref,
+    this._apiClient
   ) : super(TrackingState()) {
     WidgetsBinding.instance.addObserver(this);
   }
@@ -335,64 +332,36 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
     _stopAllActions();
     final id = state.caminhadaId;
 
-    // 1. Calcula a distância real da caminhada em metros e km
-    final totalMeters = state.totalDistanceMeters;
-    final distanceKm = totalMeters / 1000.0;
-
-    // 2. Calcula as moedas de recompensa (10 moedas/km, mínimo de 1 moeda se andou > 50m)
-    int coins = (distanceKm * 10).round();
-    if (coins == 0 && totalMeters > 50) {
-      coins = 1;
-    }
-
-    final durationMinutes = state.duration.inMinutes;
-
     if (id != null) {
       await _flushBuffer();
       await _finalizeLocal(id, now);
-    }
+      
+      state = state.copyWith(status: TrackingStatus.syncing);
 
-    // 3. Atualiza estado com a distância e moedas validadas para visualização imediata no resumo
-    state = state.copyWith(
-      status: TrackingStatus.syncing,
-      validatedDistanceKm: distanceKm,
-      validatedCoins: coins,
-    );
-
-    // 4. Atualiza o progresso do usuário no dashboard via Provider Ref interno
-    try {
-      _ref.read(dashboardProvider.notifier).addCompletedWalk(
-        distanceKm: distanceKm,
-        coins: coins,
-        durationMinutes: durationMinutes,
-      );
-    } catch (e) {
-      AppLogger.e('Erro ao atualizar dashboardProvider', e);
-    }
-
-    // 5. Executa sincronização de forma não-bloqueante / resiliente (timeout de 3s para não travar a UI)
-    try {
-      await _syncService.triggerSync().timeout(const Duration(seconds: 3));
-      if (id != null) {
+      try {
+        await _syncService.triggerSync();
         final check = await _caminhadaDao.getById(id);
         if (check == null || check['status'] == 'sincronizada') {
           state = state.copyWith(status: TrackingStatus.finished);
         } else {
           state = state.copyWith(status: TrackingStatus.finished, errorMessage: "offline_sync_pending");
         }
-      } else {
-        try {
-          final payload = {
-            'coordinates': state.rawPath.map((c) => c.toJson()).toList(),
-            'totalDurationSeconds': state.duration.inSeconds,
-          };
-          await _apiClient.syncCaminhada(payload);
-        } catch (_) {}
-        state = state.copyWith(status: TrackingStatus.finished);
+      } catch (e) {
+         state = state.copyWith(status: TrackingStatus.finished, errorMessage: "offline_sync_pending");
       }
-    } catch (e) {
-      AppLogger.e('Sincronização em background pendente (modo offline)', e);
-      state = state.copyWith(status: TrackingStatus.finished, errorMessage: "offline_sync_pending");
+    } else {
+      state = state.copyWith(status: TrackingStatus.syncing);
+      try {
+        final payload = {
+          'coordinates': state.rawPath.map((c) => c.toJson()).toList(),
+          'totalDurationSeconds': state.duration.inSeconds,
+        };
+        await _apiClient.syncCaminhada(payload);
+        state = state.copyWith(status: TrackingStatus.finished);
+      } catch (e) {
+        AppLogger.e('Falha no sync de emergência sem banco local', e);
+        state = state.copyWith(status: TrackingStatus.finished, errorMessage: "offline_sync_pending");
+      }
     }
   }
 

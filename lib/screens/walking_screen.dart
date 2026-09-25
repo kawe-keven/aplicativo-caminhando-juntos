@@ -8,6 +8,7 @@ import 'package:caminhandojuntos/widgets/app_tile_layer.dart';
 import 'package:caminhandojuntos/widgets/walking_back_button.dart';
 import 'package:caminhandojuntos/widgets/walking_info_panel.dart';
 import 'package:caminhandojuntos/widgets/walking_action_buttons.dart';
+import 'package:caminhandojuntos/widgets/map_credit_label.dart';
 import 'package:caminhandojuntos/providers/user_provider.dart';
 import 'package:caminhandojuntos/services/initial_location_service.dart';
 import 'package:flutter/material.dart';
@@ -92,137 +93,36 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     if (state.status == TrackingStatus.tracking || state.status == TrackingStatus.paused) {
       showDialog(
         context: context,
-        builder: (dialogContext) => Consumer(
-          builder: (dialogContext, dialogRef, _) {
-            final isHighContrast = dialogRef.watch(accessibilityProvider).highContrastEnabled;
-            final isVoiceEnabled = dialogRef.watch(accessibilityProvider).voiceReadingEnabled;
-
-            if (isVoiceEnabled) {
-              dialogRef.read(accessibilityProvider.notifier).speak("Sair da caminhada? Escolha o que deseja fazer com a atividade atual.");
-            }
-
-            return AlertDialog(
-              backgroundColor: isHighContrast ? Colors.black : Theme.of(context).colorScheme.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: isHighContrast ? const BorderSide(color: Colors.white, width: 2) : BorderSide.none,
-              ),
-              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-              contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-              actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              title: Text(
-                "Sair da caminhada?",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              content: Text(
-                "Escolha o que deseja fazer com a atividade atual:",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: isHighContrast ? Colors.white70 : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              actions: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // 1. Continuar caminhando (Ação Principal)
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        if (isVoiceEnabled) {
-                          dialogRef.read(accessibilityProvider.notifier).speak("Continuando caminhada");
-                        }
-                        Navigator.pop(dialogContext);
-                      },
-                      icon: const Icon(Icons.play_arrow, size: 24),
-                      label: const Text(
-                        "Continuar caminhando",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 56),
-                        backgroundColor: isHighContrast ? const Color(0xFFFAFAFA) : Theme.of(context).colorScheme.primary,
-                        foregroundColor: isHighContrast ? const Color(0xFF0A0A0A) : Theme.of(context).colorScheme.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: isHighContrast ? const BorderSide(color: Colors.white, width: 2) : BorderSide.none,
-                        ),
-                        elevation: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // 2. Pausar e Sair (Ação Secundária)
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        if (isVoiceEnabled) {
-                          dialogRef.read(accessibilityProvider.notifier).speak("Caminhada pausada. Voltando ao início.");
-                        }
-                        ref.read(trackingProvider.notifier).pauseTracking();
-                        Navigator.pop(dialogContext);
-                        context.go('/dashboard');
-                      },
-                      icon: const Icon(Icons.pause_circle_outline, size: 24),
-                      label: const Text(
-                        "Pausar e sair",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 56),
-                        foregroundColor: isHighContrast ? Colors.cyanAccent : AppTheme.secondaryColor,
-                        side: BorderSide(
-                          color: isHighContrast ? Colors.cyanAccent : AppTheme.secondaryColor,
-                          width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // 3. Descartar caminhada (Ação Destrutiva)
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        if (isVoiceEnabled) {
-                          dialogRef.read(accessibilityProvider.notifier).speak("Caminhada descartada.");
-                        }
-                        final messenger = ScaffoldMessenger.of(context);
-                        final router = GoRouter.of(context);
-                        Navigator.pop(dialogContext);
-                        await ref.read(trackingProvider.notifier).discardTracking();
-                        if (!mounted) return;
-                        messenger.showSnackBar(
-                          const SnackBar(content: Text("Caminhada descartada."))
-                        );
-                        router.go('/dashboard');
-                      },
-                      icon: const Icon(Icons.delete_outline, size: 24),
-                      label: const Text(
-                        "Descartar caminhada",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 56),
-                        foregroundColor: isHighContrast ? Colors.redAccent : AppTheme.errorColor,
-                        side: BorderSide(
-                          color: isHighContrast ? Colors.redAccent : AppTheme.errorColor,
-                          width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
+        builder: (context) => AlertDialog(
+          title: const Text("Sair da caminhada?"),
+          content: const Text("Escolha o que deseja fazer com a atividade atual:"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), 
+              child: const Text("Continuar caminhando")
+            ),
+            TextButton(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final router = GoRouter.of(context);
+                Navigator.pop(context);
+                await ref.read(trackingProvider.notifier).discardTracking();
+                messenger.showSnackBar(
+                  const SnackBar(content: Text("Caminhada descartada."))
+                );
+                router.go('/dashboard');
+              }, 
+              child: const Text("Descartar", style: TextStyle(color: Colors.red))
+            ),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(trackingProvider.notifier).pauseTracking();
+                Navigator.pop(context);
+                context.go('/dashboard');
+              }, 
+              child: const Text("Pausar e Sair")
+            ),
+          ],
         ),
       );
       return;
@@ -238,104 +138,55 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => Consumer(
-        builder: (dialogContext, dialogRef, _) {
-          final isHighContrast = dialogRef.watch(accessibilityProvider).highContrastEnabled;
-          final isVoiceEnabled = dialogRef.watch(accessibilityProvider).voiceReadingEnabled;
-
-          if (isVoiceEnabled) {
-            dialogRef.read(accessibilityProvider.notifier).speak(UiTexts.finishDialogTitle);
-          }
-
-          return AlertDialog(
-            backgroundColor: isHighContrast ? Colors.black : Theme.of(context).colorScheme.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: isHighContrast ? const BorderSide(color: Colors.white, width: 2) : BorderSide.none,
-            ),
-            titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            title: Text(
-              UiTexts.finishDialogTitle,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.onSurface,
+      builder: (context) => AlertDialog(
+        title: const Text(UiTexts.finishDialogTitle),
+        actionsOverflowDirection: VerticalDirection.down,
+        actionsAlignment: MainAxisAlignment.end,
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 56),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            actions: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      if (isVoiceEnabled) {
-                        dialogRef.read(accessibilityProvider.notifier).speak("Finalizando caminhada e salvando dados.");
-                      }
-                      Navigator.pop(dialogContext);
-                      final notifier = ref.read(trackingProvider.notifier);
-                      
-                      await notifier.finishAndSync();
-                      
-                      if (!mounted) return;
-                      final currentState = ref.read(trackingProvider);
-                      if (currentState.errorMessage == "offline_sync_pending") {
-                        messenger.showSnackBar(
-                          const SnackBar(
-                            content: Text(UiTexts.walkFinishedMessage),
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                      router.go('/summary');
-                    },
-                    icon: const Icon(Icons.check_circle_outline, size: 24),
-                    label: const Text(
-                      UiTexts.finishDialogYes,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 56),
-                      foregroundColor: isHighContrast ? Colors.cyanAccent : Theme.of(context).colorScheme.primary,
-                      side: BorderSide(
-                        color: isHighContrast ? Colors.cyanAccent : Theme.of(context).colorScheme.primary,
-                        width: 2,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
+            child: const Text(
+              UiTexts.finishDialogNo,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          OutlinedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final notifier = ref.read(trackingProvider.notifier);
+              
+              await notifier.finishAndSync();
+              
+              final state = ref.read(trackingProvider);
+              if (state.errorMessage == "offline_sync_pending") {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text(UiTexts.walkFinishedMessage),
+                    duration: Duration(seconds: 5),
                   ),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      if (isVoiceEnabled) {
-                        dialogRef.read(accessibilityProvider.notifier).speak("Cancelado");
-                      }
-                      Navigator.pop(dialogContext);
-                    },
-                    icon: const Icon(Icons.close, size: 24),
-                    label: const Text(
-                      UiTexts.finishDialogNo,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 56),
-                      backgroundColor: isHighContrast ? const Color(0xFFFAFAFA) : Theme.of(context).colorScheme.primary,
-                      foregroundColor: isHighContrast ? const Color(0xFF0A0A0A) : Theme.of(context).colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: isHighContrast ? const BorderSide(color: Colors.white, width: 2) : BorderSide.none,
-                      ),
-                      elevation: 2,
-                    ),
-                  ),
-                ],
+                );
+              }
+              router.go('/summary');
+            },
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 56),
+              side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          );
-        },
+            ),
+            child: const Text(
+              UiTexts.finishDialogYes,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -408,10 +259,6 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                 ),
                 children: [
                   AppTileLayer.build(isHighContrast: isHighContrast),
-                  RichAttributionWidget(
-                    attributions: AppTileLayer.getAttributions(context),
-                    alignment: AttributionAlignment.bottomLeft,
-                  ),
                   // Marker Layer Otimizado (Reconstrói apenas quando currentPosition muda)
                   Consumer(
                     key: const ValueKey('marker_layer_consumer'),
@@ -503,6 +350,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                     builder: (context, ref, _) {
                       final status = ref.watch(trackingProvider.select((s) => s.status));
                       final duration = ref.watch(trackingProvider.select((s) => s.duration));
+                      final hasPath = ref.watch(trackingProvider.select((s) => s.mapPath.isNotEmpty));
                       final errorMessage = ref.watch(trackingProvider.select((s) => s.errorMessage));
 
                       return Column(
@@ -522,7 +370,7 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                                   alignment: Alignment.topRight,
                                   child: WalkingInfoPanel(
                                     formattedTime: _formatDuration(duration),
-                                    distanceMetresOrKm: ref.watch(trackingProvider.select((s) => s.totalDistanceMeters)), 
+                                    distanceMetresOrKm: hasPath ? 1200.0 : 0.0, 
                                   ),
                                 ),
                               ),
@@ -575,6 +423,10 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 6, left: 4),
+                            child: MapCreditLabel(),
+                          ),
                           if (status == TrackingStatus.syncing)
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 16),
