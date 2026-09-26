@@ -63,6 +63,7 @@ dependencies:
   path: ^1.9.1
   connectivity_plus: ^7.3.1
   workmanager: ^0.10.10
+  firebase_crashlytics: ^4.3.0
 
 dev_dependencies:
   flutter_test:

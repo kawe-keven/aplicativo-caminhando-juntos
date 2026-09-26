@@ -6,8 +6,12 @@ class CaminhadaApiClient extends BaseApiService {
 
   Future<Map<String, dynamic>> syncCaminhada(Map<String, dynamic> payload) async {
     try {
-      await _secureStorage.read('auth_token');
-      final response = await post('/api/caminhada/sync', payload);
+      final token = await _secureStorage.read('auth_token');
+      if (token == null || token.isEmpty) {
+        throw const SessaoExpiradaException();
+      }
+      final headers = {'Authorization': 'Bearer $token'};
+      final response = await post('/api/caminhada/sync', payload, headers: headers);
       return response;
     } catch (e) {
       rethrow;

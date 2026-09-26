@@ -47,4 +47,13 @@ class CaminhadaDao {
     final results = await db.query('caminhadas', where: "status = 'em_andamento'", limit: 1);
     return results.isNotEmpty ? results.first : null;
   }
+
+  Future<List<Map<String, dynamic>>> getAllCompleted() async {
+    final db = await _localDb.database;
+    return await db.query(
+      'caminhadas',
+      where: "status != 'em_andamento'",
+      orderBy: 'inicio_ms DESC',
+    );
+  }
 }

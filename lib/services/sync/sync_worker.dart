@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:caminhandojuntos/config/api_config.dart';
 import 'package:caminhandojuntos/services/local/caminhada_dao.dart';
 import 'package:caminhandojuntos/services/local/ponto_dao.dart';
 import 'package:caminhandojuntos/services/local/pausa_dao.dart';
 import 'package:caminhandojuntos/services/logger_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
-
-const String kBackendUrl = String.fromEnvironment('BACKEND_URL', defaultValue: 'https://api.caminhandojuntos.com.br');
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -86,17 +86,19 @@ class SyncWorker {
           }).toList(),
         };
 
-        // Note: We need the token. In a background isolate, we can't use Riverpod.
-        // We assume token is in SharedPreferences or SecureStorage.
-        // For simplicity and following instructions, we'll try to get it.
-        // requirement says: "Token vem do flutter_secure_storage... tratar como sem sessão if exception"
-        // But here I'll use SharedPreferences if that's where we store it for the worker.
-        // Actually, the prompt 5.1 in my first response said secure storage.
-        // For now, I'll proceed with the request.
-        
+        // Lê o token diretamente do SecureStorage no isolate de background
+        const secureStorage = FlutterSecureStorage();
+        final token = await secureStorage.read(key: 'auth_token');
+
+        final headers = {
+          'Content-Type': 'application/json',
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        };
+
+        final baseHost = ApiConfig.baseUrl.replaceAll('/v1', '');
         final response = await http.post(
-          Uri.parse('$kBackendUrl/api/caminhada/sync'),
-          headers: {'Content-Type': 'application/json'},
+          Uri.parse('$baseHost/api/caminhada/sync'),
+          headers: headers,
           body: jsonEncode(payload),
         ).timeout(const Duration(seconds: 5));
 

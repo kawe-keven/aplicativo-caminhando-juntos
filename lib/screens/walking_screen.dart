@@ -510,20 +510,20 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              WalkingBackButton(
-                                trackingStatus: status,
-                                onPop: _handleBackAction,
+                              Expanded(
+                                flex: 1,
+                                child: WalkingBackButton(
+                                  trackingStatus: status,
+                                  onPop: _handleBackAction,
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Align(
-                                  alignment: Alignment.topRight,
-                                  child: WalkingInfoPanel(
-                                    formattedTime: _formatDuration(duration),
-                                    distanceMetresOrKm: ref.watch(trackingProvider.select((s) => s.totalDistanceMeters)), 
-                                  ),
+                                flex: 2,
+                                child: WalkingInfoPanel(
+                                  formattedTime: _formatDuration(duration),
+                                  distanceMetresOrKm: ref.watch(trackingProvider.select((s) => s.totalDistanceMeters)), 
                                 ),
                               ),
                             ],

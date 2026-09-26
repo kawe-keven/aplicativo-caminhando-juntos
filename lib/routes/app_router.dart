@@ -54,11 +54,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/emergency',
         builder: (context, state) {
-          final extra = state.extra as Map<String, String>;
-          return EmergencyAlertScreen(
-            contactName: extra['name']!,
-            contactPhone: extra['phone']!,
-          );
+          final extra = state.extra;
+          if (extra is List<Map<String, String>> && extra.isNotEmpty) {
+            return EmergencyAlertScreen(contacts: extra);
+          } else if (extra is Map<String, String> && extra.containsKey('name') && extra.containsKey('phone')) {
+            return EmergencyAlertScreen(contacts: [extra]);
+          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Contatos de emergência não configurados ou inválidos.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          });
+          return const ProfileScreen();
         },
       ),
 

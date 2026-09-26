@@ -23,17 +23,17 @@ class WalkingBackButton extends ConsumerWidget {
       child: Material(
         elevation: 4,
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         shadowColor: Colors.black38,
         shape: isHighContrast ? RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(24),
           side: const BorderSide(color: Colors.white, width: 2),
         ) : null,
         child: InkWell(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(24),
           onTap: onPop,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -41,16 +41,15 @@ class WalkingBackButton extends ConsumerWidget {
                 Icon(
                   Icons.arrow_back,
                   color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.primary,
-                  size: 28,
+                  size: 22,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     "Voltar",
-                    softWrap: true,
-                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.primary,
                     ),

@@ -33,12 +33,42 @@ class UserNotifier extends StateNotifier<UserModel> {
     }
   }
 
+  void updateEmergencyContacts(List<EmergencyContact> contacts) {
+    state = state.copyWith(emergencyContacts: contacts);
+  }
+
+  void addEmergencyContact(EmergencyContact contact) {
+    if (state.emergencyContacts.length < 3) {
+      state = state.copyWith(emergencyContacts: [...state.emergencyContacts, contact]);
+    }
+  }
+
+  void removeEmergencyContact(int index) {
+    final list = List<EmergencyContact>.from(state.emergencyContacts);
+    if (index >= 0 && index < list.length) {
+      list.removeAt(index);
+      state = state.copyWith(emergencyContacts: list);
+    }
+  }
+
   void updateEmergencyContactName(String name) {
-    state = state.copyWith(emergencyContactName: name);
+    final contacts = List<EmergencyContact>.from(state.emergencyContacts);
+    if (contacts.isNotEmpty) {
+      contacts[0] = EmergencyContact(name: name, phone: contacts[0].phone);
+    } else {
+      contacts.add(EmergencyContact(name: name, phone: ''));
+    }
+    state = state.copyWith(emergencyContacts: contacts);
   }
 
   void updateEmergencyContactPhone(String phone) {
-    state = state.copyWith(emergencyContactPhone: phone);
+    final contacts = List<EmergencyContact>.from(state.emergencyContacts);
+    if (contacts.isNotEmpty) {
+      contacts[0] = EmergencyContact(name: contacts[0].name, phone: phone);
+    } else {
+      contacts.add(EmergencyContact(name: '', phone: phone));
+    }
+    state = state.copyWith(emergencyContacts: contacts);
   }
 
   /// Finaliza o cadastro e salva no disco.
@@ -65,7 +95,8 @@ class UserNotifier extends StateNotifier<UserModel> {
 
   bool isFormValid() {
     return state.name.trim().isNotEmpty && 
-           state.emergencyContactName.trim().isNotEmpty &&
-           state.emergencyContactPhone.trim().length >= 10;
+           state.emergencyContacts.isNotEmpty &&
+           state.emergencyContacts.first.name.trim().isNotEmpty &&
+           state.emergencyContacts.first.phone.trim().length >= 10;
   }
 }
