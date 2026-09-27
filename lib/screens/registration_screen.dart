@@ -1,3 +1,4 @@
+import 'package:caminhandojuntos/models/user_model.dart';
 import 'package:caminhandojuntos/providers/user_provider.dart';
 import 'package:caminhandojuntos/theme/app_theme.dart';
 import 'package:caminhandojuntos/widgets/age_selector_widget.dart';
@@ -20,11 +21,58 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isSuccess = false;
 
-  final _phoneFormatter = MaskTextInputFormatter(
-    mask: '(##) #####-####',
-    filter: {"#": RegExp(r'[0-9]')},
-    type: MaskAutoCompletionType.lazy,
-  );
+  final List<Map<String, TextEditingController>> _contacts = [
+    {
+      'name': TextEditingController(),
+      'phone': TextEditingController(),
+    }
+  ];
+
+  final List<MaskTextInputFormatter> _phoneFormatters = [
+    MaskTextInputFormatter(
+      mask: '(##) #####-####',
+      filter: {"#": RegExp(r'[0-9]')},
+      type: MaskAutoCompletionType.lazy,
+    )
+  ];
+
+  @override
+  void dispose() {
+    for (var c in _contacts) {
+      c['name']!.dispose();
+      c['phone']!.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addContactField() {
+    if (_contacts.length < 3) {
+      setState(() {
+        _contacts.add({
+          'name': TextEditingController(),
+          'phone': TextEditingController(),
+        });
+        _phoneFormatters.add(
+          MaskTextInputFormatter(
+            mask: '(##) #####-####',
+            filter: {"#": RegExp(r'[0-9]')},
+            type: MaskAutoCompletionType.lazy,
+          ),
+        );
+      });
+    }
+  }
+
+  void _removeContactField(int index) {
+    if (_contacts.length > 1) {
+      setState(() {
+        _contacts[index]['name']!.dispose();
+        _contacts[index]['phone']!.dispose();
+        _contacts.removeAt(index);
+        _phoneFormatters.removeAt(index);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,39 +181,82 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   age: user.age,
                   onAgeChanged: notifier.updateAge,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
-                // 3. Nome do Contato
-                CustomTextField(
-                  label: "Nome do Contato",
-                  hint: "Ex: Filha Ana",
-                  description: "Qual o nome da pessoa de confiança?",
-                  icon: Icons.person_outline,
-                  onChanged: notifier.updateEmergencyContactName,
-                  validator: (value) => (value == null || value.trim().isEmpty) ? "Por favor, digite o nome do contato." : null,
-                ),
-                const SizedBox(height: 16),
-
-                // 4. Número de Emergência
-                CustomTextField(
-                  label: "Número de emergência",
-                  hint: "(11) 98765-4321",
-                  description: "Número para ligar em qualquer imprevisto.",
-                  icon: Icons.phone,
-                  iconColor: AppTheme.errorColor,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    _phoneFormatter,
+                // 3. Contatos de Emergência (Até 3)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Contatos de Emergência (${_contacts.length}/3)", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    if (_contacts.length < 3)
+                      TextButton.icon(
+                        onPressed: _addContactField,
+                        icon: const Icon(Icons.add),
+                        label: const Text("Adicionar outro"),
+                      ),
                   ],
-                  onChanged: (value) => notifier.updateEmergencyContactPhone(_phoneFormatter.getUnmaskedText()),
-                  validator: (value) {
-                    final unmasked = _phoneFormatter.getUnmaskedText();
-                    if (unmasked.isEmpty) return "Por favor, digite o número.";
-                    if (unmasked.length < 10) return "Número incompleto (mínimo 10 dígitos).";
-                    return null;
-                  },
                 ),
+                const SizedBox(height: 8),
+
+                ...List.generate(_contacts.length, (index) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("Contato ${index + 1}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            if (_contacts.length > 1)
+                              IconButton(
+                                onPressed: () => _removeContactField(index),
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _contacts[index]['name'],
+                          decoration: InputDecoration(
+                            labelText: "Nome do Contato",
+                            hintText: "Ex: Filha Ana",
+                            prefixIcon: const Icon(Icons.person_outline),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          validator: index == 0 ? (value) => (value == null || value.trim().isEmpty) ? "Digite o nome do contato principal." : null : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _contacts[index]['phone'],
+                          keyboardType: TextInputType.phone,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            _phoneFormatters[index],
+                          ],
+                          decoration: InputDecoration(
+                            labelText: "Número de Telefone",
+                            hintText: "(11) 98765-4321",
+                            prefixIcon: const Icon(Icons.phone),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          validator: index == 0 ? (value) {
+                            final unmasked = _phoneFormatters[index].getUnmaskedText();
+                            if (unmasked.isEmpty) return "Digite o telefone principal.";
+                            if (unmasked.length < 10) return "Número incompleto.";
+                            return null;
+                          } : null,
+                        ),
+                      ],
+                    ),
+                  );
+                }),
                 const SizedBox(height: 24),
 
                 // Actions
@@ -175,6 +266,15 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
                       setState(() => _isSuccess = true);
+
+                      final emergencyContacts = _contacts.map((c) {
+                        return EmergencyContact(
+                          name: c['name']!.text.trim(),
+                          phone: c['phone']!.text.replaceAll(RegExp(r'\D'), ''),
+                        );
+                      }).where((c) => c.name.isNotEmpty && c.phone.isNotEmpty).toList();
+
+                      notifier.updateEmergencyContacts(emergencyContacts);
                       
                       final router = GoRouter.of(context);
                       await notifier.completeRegistration();

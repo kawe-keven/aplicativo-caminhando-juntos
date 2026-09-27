@@ -1,3 +1,4 @@
+import 'package:caminhandojuntos/models/user_model.dart';
 import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/providers/user_provider.dart';
@@ -38,7 +39,7 @@ class ProfileScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 _StatsGrid(progress: dashboardState.progress, isHighContrast: isHighContrast),
                 const SizedBox(height: 24),
-                _SecurityCard(contactName: user.emergencyContactName, contactPhone: user.emergencyContactPhone, onEdit: () => _showEditContactModal(context, ref, isHighContrast), isHighContrast: isHighContrast),
+                _SecurityCard(contacts: user.emergencyContacts, onEdit: () => _showEditContactModal(context, ref, isHighContrast), isHighContrast: isHighContrast),
                 const SizedBox(height: 24),
                 _ShortcutTile(
                   icon: Icons.settings,
@@ -88,22 +89,53 @@ class _EditContactModal extends StatefulWidget {
 }
 
 class _EditContactModalState extends State<_EditContactModal> {
-  late TextEditingController _nameController;
-  late TextEditingController _phoneController;
+  late List<Map<String, TextEditingController>> _controllers;
 
   @override
   void initState() {
     super.initState();
     final user = widget.ref.read(userProvider);
-    _nameController = TextEditingController(text: user.emergencyContactName);
-    _phoneController = TextEditingController(text: user.emergencyContactPhone);
+    _controllers = user.emergencyContacts.map((c) => {
+      'name': TextEditingController(text: c.name),
+      'phone': TextEditingController(text: c.phone),
+    }).toList();
+
+    if (_controllers.isEmpty) {
+      _controllers.add({
+        'name': TextEditingController(),
+        'phone': TextEditingController(),
+      });
+    }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
+    for (var c in _controllers) {
+      c['name']!.dispose();
+      c['phone']!.dispose();
+    }
     super.dispose();
+  }
+
+  void _addContact() {
+    if (_controllers.length < 3) {
+      setState(() {
+        _controllers.add({
+          'name': TextEditingController(),
+          'phone': TextEditingController(),
+        });
+      });
+    }
+  }
+
+  void _removeContact(int index) {
+    if (_controllers.length > 1) {
+      setState(() {
+        _controllers[index]['name']!.dispose();
+        _controllers[index]['phone']!.dispose();
+        _controllers.removeAt(index);
+      });
+    }
   }
 
   @override
@@ -117,70 +149,105 @@ class _EditContactModalState extends State<_EditContactModal> {
       ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Editar Contato Seguro", style: TextStyle(
-                  fontSize: 22, 
-                  fontWeight: FontWeight.bold,
-                  color: isHC ? Colors.white : Theme.of(context).colorScheme.onSurface,
-                )),
-                IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.close, color: isHC ? Colors.white : null)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text("Nome do Familiar de Confiança:", style: TextStyle(fontSize: 16, color: isHC ? Colors.white70 : AppTheme.onSurfaceVariant)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              style: TextStyle(color: isHC ? Colors.white : Colors.black),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: isHC ? Colors.black : const Color(0xFFF1F3FF),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: isHC ? const BorderSide(color: Colors.white38) : BorderSide.none),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: isHC ? const BorderSide(color: Colors.white38) : BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isHC ? Colors.yellow : AppTheme.primaryColor, width: 2)),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Contatos de Segurança (${_controllers.length}/3)", style: TextStyle(
+                    fontSize: 20, 
+                    fontWeight: FontWeight.bold,
+                    color: isHC ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                  )),
+                  IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.close, color: isHC ? Colors.white : null)),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-            Text("Número com DDD:", style: TextStyle(fontSize: 16, color: isHC ? Colors.white70 : AppTheme.onSurfaceVariant)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              style: TextStyle(color: isHC ? Colors.white : Colors.black),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: isHC ? Colors.black : const Color(0xFFF1F3FF),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: isHC ? const BorderSide(color: Colors.white38) : BorderSide.none),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: isHC ? const BorderSide(color: Colors.white38) : BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isHC ? Colors.yellow : AppTheme.primaryColor, width: 2)),
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isHC ? Colors.white : Theme.of(context).colorScheme.primary,
-                foregroundColor: isHC ? Colors.black : Theme.of(context).colorScheme.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: isHC ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
+              const SizedBox(height: 16),
+              ...List.generate(_controllers.length, (index) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isHC ? Colors.grey[900] : const Color(0xFFF1F3FF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Contato ${index + 1}", style: TextStyle(fontWeight: FontWeight.bold, color: isHC ? Colors.white : Colors.black)),
+                          if (_controllers.length > 1)
+                            IconButton(onPressed: () => _removeContact(index), icon: const Icon(Icons.delete, color: Colors.red, size: 20)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _controllers[index]['name'],
+                        style: TextStyle(color: isHC ? Colors.white : Colors.black),
+                        decoration: InputDecoration(
+                          labelText: "Nome",
+                          filled: true,
+                          fillColor: isHC ? Colors.black : Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _controllers[index]['phone'],
+                        keyboardType: TextInputType.phone,
+                        style: TextStyle(color: isHC ? Colors.white : Colors.black),
+                        decoration: InputDecoration(
+                          labelText: "Telefone",
+                          filled: true,
+                          fillColor: isHC ? Colors.black : Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              if (_controllers.length < 3)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _addContact,
+                    icon: const Icon(Icons.add),
+                    label: const Text("Adicionar outro contato"),
+                  ),
                 ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isHC ? Colors.white : Theme.of(context).colorScheme.primary,
+                  foregroundColor: isHC ? Colors.black : Theme.of(context).colorScheme.onPrimary,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: isHC ? const BorderSide(color: Colors.white, width: 3) : BorderSide.none,
+                  ),
+                ),
+                onPressed: () {
+                  final contacts = _controllers.map((c) {
+                    return EmergencyContact(
+                      name: c['name']!.text.trim(),
+                      phone: c['phone']!.text.trim(),
+                    );
+                  }).where((c) => c.name.isNotEmpty && c.phone.isNotEmpty).toList();
+
+                  widget.ref.read(userProvider.notifier).updateEmergencyContacts(contacts);
+                  widget.ref.read(userProvider.notifier).updateUser();
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Contatos salvos com sucesso!")));
+                },
+                child: const Text("Salvar Contatos"),
               ),
-              onPressed: () {
-                widget.ref.read(userProvider.notifier).updateEmergencyContactName(_nameController.text);
-                widget.ref.read(userProvider.notifier).updateEmergencyContactPhone(_phoneController.text);
-                widget.ref.read(userProvider.notifier).updateUser();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Contato salvo com sucesso!")));
-              },
-              child: const Text("Salvar Contato"),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -290,11 +357,10 @@ class _StatCard extends StatelessWidget {
 }
 
 class _SecurityCard extends StatelessWidget {
-  final String contactName;
-  final String contactPhone;
+  final List<EmergencyContact> contacts;
   final VoidCallback onEdit;
   final bool isHighContrast;
-  const _SecurityCard({required this.contactName, required this.contactPhone, required this.onEdit, required this.isHighContrast});
+  const _SecurityCard({required this.contacts, required this.onEdit, required this.isHighContrast});
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -312,7 +378,7 @@ class _SecurityCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  "Contato de Segurança",
+                  "Contatos de Segurança",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -325,17 +391,23 @@ class _SecurityCard extends StatelessWidget {
               IconButton(onPressed: onEdit, icon: Icon(Icons.edit, size: 20, color: isHighContrast ? Colors.white : null)),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            contactName.isEmpty ? "Não cadastrado" : "$contactName: $contactPhone",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 18,
-              color: isHighContrast ? Colors.white : AppTheme.secondaryColor,
-              fontWeight: isHighContrast ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
+          const SizedBox(height: 12),
+          if (contacts.isEmpty)
+            Text("Nenhum contato cadastrado", style: TextStyle(color: isHighContrast ? Colors.white70 : Colors.grey, fontSize: 16))
+          else
+            ...contacts.map((c) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                "• ${c.name}: ${c.phone}",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isHighContrast ? Colors.white : AppTheme.secondaryColor,
+                  fontWeight: isHighContrast ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            )),
         ],
       ),
     );
@@ -367,4 +439,3 @@ class _ShortcutTile extends StatelessWidget {
     );
   }
 }
-

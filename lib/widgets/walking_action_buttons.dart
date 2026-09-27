@@ -122,15 +122,17 @@ class _ActionButton extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 56),
         child: ElevatedButton(
           onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: bgColor,
-            foregroundColor: fgColor,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: border,
+          style: ButtonStyle(
+            backgroundColor: WidgetStateProperty.all(bgColor),
+            foregroundColor: WidgetStateProperty.all(fgColor),
+            padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+            shape: WidgetStateProperty.all(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: border,
+              ),
             ),
-            elevation: 4,
+            elevation: WidgetStateProperty.all(4),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

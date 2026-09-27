@@ -18,6 +18,26 @@ class UserProgress {
   double get progressPercentage => (steps / goalSteps).clamp(0.0, 1.0);
   int get remainingSteps => goalSteps - steps > 0 ? goalSteps - steps : 0;
 
+  Map<String, dynamic> toJson() => {
+        'steps': steps,
+        'goalSteps': goalSteps,
+        'coins': coins,
+        'distanceKm': distanceKm,
+        'durationMinutes': durationMinutes,
+        'calories': calories,
+      };
+
+  factory UserProgress.fromJson(Map<String, dynamic> json) {
+    return UserProgress(
+      steps: json['steps'] as int? ?? 0,
+      goalSteps: json['goalSteps'] as int? ?? 5000,
+      coins: json['coins'] as int? ?? 0,
+      distanceKm: (json['distanceKm'] as num?)?.toDouble() ?? 0.0,
+      durationMinutes: json['durationMinutes'] as int? ?? 0,
+      calories: json['calories'] as int? ?? 0,
+    );
+  }
+
   UserProgress copyWith({
     int? steps,
     int? goalSteps,

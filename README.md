@@ -57,6 +57,17 @@ Para garantir a segurança, o token do Mapbox não está no código. Siga os pas
    ```
    No **Android Studio**, adicione `--dart-define-from-file=mapbox_env.json` no campo "Additional run args" em *Edit Configurations*.
 
+### 🌐 Configuração do Backend (Opcional)
+A URL do backend pode ser customizada no build usando `--dart-define`:
+```bash
+flutter run --dart-define=BACKEND_URL=https://api.caminhandojuntos.com.br
+```
+
+### 📊 Crash Reporting (Firebase Crashlytics)
+O projeto possui suporte integrado a `firebase_crashlytics` via `AppLogger.e`. Para habilitar relatórios de falhas em produção:
+1. Adicione o arquivo `google-services.json` gerado no console do Firebase em `android/app/`.
+2. Certifique-se de que o plugin do Google Services esteja ativo no gradle do Android.
+
 ---
 
 ## 🏗️ Arquitetura e Segurança

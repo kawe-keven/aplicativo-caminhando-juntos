@@ -143,15 +143,17 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                         "Continuar caminhando",
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 56),
-                        backgroundColor: isHighContrast ? const Color(0xFFFAFAFA) : Theme.of(context).colorScheme.primary,
-                        foregroundColor: isHighContrast ? const Color(0xFF0A0A0A) : Theme.of(context).colorScheme.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: isHighContrast ? const BorderSide(color: Colors.white, width: 2) : BorderSide.none,
+                      style: ButtonStyle(
+                        minimumSize: WidgetStateProperty.all(const Size(double.infinity, 56)),
+                        backgroundColor: WidgetStateProperty.all(isHighContrast ? const Color(0xFFFAFAFA) : Theme.of(context).colorScheme.primary),
+                        foregroundColor: WidgetStateProperty.all(isHighContrast ? const Color(0xFF0A0A0A) : Theme.of(context).colorScheme.onPrimary),
+                        elevation: WidgetStateProperty.all(2),
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: isHighContrast ? const BorderSide(color: Colors.white, width: 2) : BorderSide.none,
+                          ),
                         ),
-                        elevation: 2,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -171,15 +173,17 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                         "Pausar e sair",
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 56),
-                        foregroundColor: isHighContrast ? Colors.cyanAccent : AppTheme.secondaryColor,
-                        side: BorderSide(
+                      style: ButtonStyle(
+                        minimumSize: WidgetStateProperty.all(const Size(double.infinity, 56)),
+                        foregroundColor: WidgetStateProperty.all(isHighContrast ? Colors.cyanAccent : AppTheme.secondaryColor),
+                        side: WidgetStateProperty.all(BorderSide(
                           color: isHighContrast ? Colors.cyanAccent : AppTheme.secondaryColor,
                           width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                        )),
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                       ),
                     ),
@@ -206,15 +210,17 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                         "Descartar caminhada",
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 56),
-                        foregroundColor: isHighContrast ? Colors.redAccent : AppTheme.errorColor,
-                        side: BorderSide(
+                      style: ButtonStyle(
+                        minimumSize: WidgetStateProperty.all(const Size(double.infinity, 56)),
+                        foregroundColor: WidgetStateProperty.all(isHighContrast ? Colors.redAccent : AppTheme.errorColor),
+                        side: WidgetStateProperty.all(BorderSide(
                           color: isHighContrast ? Colors.redAccent : AppTheme.errorColor,
                           width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                        )),
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                       ),
                     ),
@@ -295,15 +301,17 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                       UiTexts.finishDialogYes,
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 56),
-                      foregroundColor: isHighContrast ? Colors.cyanAccent : Theme.of(context).colorScheme.primary,
-                      side: BorderSide(
+                    style: ButtonStyle(
+                      minimumSize: WidgetStateProperty.all(const Size(double.infinity, 56)),
+                      foregroundColor: WidgetStateProperty.all(isHighContrast ? Colors.cyanAccent : Theme.of(context).colorScheme.primary),
+                      side: WidgetStateProperty.all(BorderSide(
                         color: isHighContrast ? Colors.cyanAccent : Theme.of(context).colorScheme.primary,
                         width: 2,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      )),
+                      shape: WidgetStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                     ),
                   ),
@@ -320,15 +328,17 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                       UiTexts.finishDialogNo,
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 56),
-                      backgroundColor: isHighContrast ? const Color(0xFFFAFAFA) : Theme.of(context).colorScheme.primary,
-                      foregroundColor: isHighContrast ? const Color(0xFF0A0A0A) : Theme.of(context).colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: isHighContrast ? const BorderSide(color: Colors.white, width: 2) : BorderSide.none,
+                    style: ButtonStyle(
+                      minimumSize: WidgetStateProperty.all(const Size(double.infinity, 56)),
+                      backgroundColor: WidgetStateProperty.all(isHighContrast ? const Color(0xFFFAFAFA) : Theme.of(context).colorScheme.primary),
+                      foregroundColor: WidgetStateProperty.all(isHighContrast ? const Color(0xFF0A0A0A) : Theme.of(context).colorScheme.onPrimary),
+                      elevation: WidgetStateProperty.all(2),
+                      shape: WidgetStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: isHighContrast ? const BorderSide(color: Colors.white, width: 2) : BorderSide.none,
+                        ),
                       ),
-                      elevation: 2,
                     ),
                   ),
                 ],
@@ -510,20 +520,20 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              WalkingBackButton(
-                                trackingStatus: status,
-                                onPop: _handleBackAction,
+                              Expanded(
+                                flex: 1,
+                                child: WalkingBackButton(
+                                  trackingStatus: status,
+                                  onPop: _handleBackAction,
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Align(
-                                  alignment: Alignment.topRight,
-                                  child: WalkingInfoPanel(
-                                    formattedTime: _formatDuration(duration),
-                                    distanceMetresOrKm: ref.watch(trackingProvider.select((s) => s.totalDistanceMeters)), 
-                                  ),
+                                flex: 2,
+                                child: WalkingInfoPanel(
+                                  formattedTime: _formatDuration(duration),
+                                  distanceMetresOrKm: ref.watch(trackingProvider.select((s) => s.totalDistanceMeters)), 
                                 ),
                               ),
                             ],

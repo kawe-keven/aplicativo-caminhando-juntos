@@ -119,20 +119,24 @@ class AppTheme {
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-          minimumSize: const Size(double.infinity, 64),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: isHighContrast
-                ? const BorderSide(color: Colors.white, width: 3.0)
-                : BorderSide.none,
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.all(colorScheme.primary),
+          foregroundColor: WidgetStateProperty.all(colorScheme.onPrimary),
+          minimumSize: WidgetStateProperty.all(const Size(double.infinity, 64)),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: isHighContrast
+                  ? const BorderSide(color: Colors.white, width: 3.0)
+                  : BorderSide.none,
+            ),
           ),
-          textStyle: GoogleFonts.lexend(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.4,
+          textStyle: WidgetStateProperty.all(
+            GoogleFonts.lexend(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
+            ),
           ),
         ),
       ),

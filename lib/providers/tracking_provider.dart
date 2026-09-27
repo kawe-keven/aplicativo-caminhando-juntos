@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:caminhandojuntos/models/coordinate_model.dart';
 import 'package:caminhandojuntos/models/tracking_state.dart';
+import 'package:caminhandojuntos/providers/accessibility_provider.dart';
 import 'package:caminhandojuntos/providers/dashboard_provider.dart';
 import 'package:caminhandojuntos/services/caminhada_api_client.dart';
 import 'package:caminhandojuntos/services/local/caminhada_dao.dart';
@@ -170,6 +171,7 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
           rawPath: [],
           mapPath: [],
         );
+        _ref.read(accessibilityProvider.notifier).notify();
       } catch (e) {
         AppLogger.e('Erro ao iniciar banco local, rastreando apenas em memória', e);
         state = state.copyWith(
@@ -180,6 +182,7 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
           rawPath: [],
           mapPath: [],
         );
+        _ref.read(accessibilityProvider.notifier).notify();
       }
       
       _startTimer();
@@ -308,6 +311,7 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
     }
 
     state = state.copyWith(status: TrackingStatus.paused);
+    _ref.read(accessibilityProvider.notifier).notify();
   }
 
   Future<void> resumeTracking() async {
@@ -326,6 +330,7 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
     _startTimer();
     _startGpsStream();
     state = state.copyWith(status: TrackingStatus.tracking);
+    _ref.read(accessibilityProvider.notifier).notify();
   }
 
   Future<void> finishAndSync() async {
@@ -358,6 +363,7 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
       validatedDistanceKm: distanceKm,
       validatedCoins: coins,
     );
+    _ref.read(accessibilityProvider.notifier).notify();
 
     // 4. Atualiza o progresso do usuário no dashboard via Provider Ref interno
     try {
