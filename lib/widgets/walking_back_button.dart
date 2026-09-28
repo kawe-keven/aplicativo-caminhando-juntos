@@ -23,7 +23,7 @@ class WalkingBackButton extends ConsumerWidget {
       child: Material(
         elevation: 4,
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isHighContrast ? null : BorderRadius.circular(24),
         shadowColor: Colors.black38,
         shape: isHighContrast ? RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
