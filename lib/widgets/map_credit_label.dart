@@ -16,7 +16,7 @@ class MapCreditLabel extends ConsumerWidget {
 
     return Material(
       color: Theme.of(context).colorScheme.surface.withValues(alpha: isHighContrast ? 1.0 : 0.85),
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: isHighContrast ? null : BorderRadius.circular(6),
       shape: isHighContrast ? RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(6),
         side: const BorderSide(color: Colors.white, width: 1),
