@@ -147,6 +147,7 @@ class AccessibilityNotifier extends StateNotifier<AccessibilityState> {
   }
 
   Future<void> notify({bool sound = true, bool haptic = true}) async {
+    if (!mounted) return;
     if (haptic && state.metaVibrationEnabled) {
       try {
         await HapticFeedback.mediumImpact();

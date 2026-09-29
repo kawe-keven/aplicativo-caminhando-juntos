@@ -78,12 +78,15 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
     final notifier = ref.read(userProvider.notifier);
+    final screenSize = MediaQuery.sizeOf(context);
+    final isSmallScreen = screenSize.width < 360;
+    final horizontalPadding = isSmallScreen ? 12.0 : 20.0;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
           child: Form(
             key: _formKey,
             child: Column(
@@ -131,7 +134,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
                 // Card de Boas-vindas
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
                   decoration: BoxDecoration(color: const Color(0xFFF1F3FF), borderRadius: BorderRadius.circular(16)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +190,13 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Contatos de Emergência (${_contacts.length}/3)", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    Expanded(
+                      child: Text(
+                        "Contatos de Emergência (${_contacts.length}/3)",
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     if (_contacts.length < 3)
                       TextButton.icon(
                         onPressed: _addContactField,

@@ -15,42 +15,41 @@ class InitialLocationService {
   LatLng? _memCache;
 
   /// Tenta obter a posição inicial do usuário usando cache, GPS rápido ou histórico.
-  Future<LatLng?> obterPosicaoInicial() async {
+  Future<LatLng> obterPosicaoInicial() async {
     try {
       // 1. Cache em memória
-      if (_memCache != null) return _memCache;
+      if (_memCache != null) return _memCache!;
+
+      // 2. Tenta carregar do SharedPreferences
+      LatLng? fromPrefs = await _tryLoadFromPrefs();
+      if (fromPrefs != null) return fromPrefs;
 
       // Verifica permissão sem solicitar
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied || 
           permission == LocationPermission.deniedForever) {
-        return await _tryLoadFromPrefs();
+        return const LatLng(-23.5505, -46.6333);
       }
 
       // Verifica se o serviço está ligado
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return await _tryLoadFromPrefs();
+      if (!serviceEnabled) return const LatLng(-23.5505, -46.6333);
 
-      // 2. Última posição conhecida do sistema (instantâneo)
+      // 3. Última posição conhecida do sistema (instantâneo)
       Position? lastKnown = await Geolocator.getLastKnownPosition();
       if (lastKnown != null) {
-        return await _saveAndReturn(LatLng(lastKnown.latitude, lastKnown.longitude));
+        return await _saveAndReturn(LatLng(lastKnown.latitude, lastKnown.longitude)) ?? const LatLng(-23.5505, -46.6333);
       }
 
-      // 3. Tenta carregar do SharedPreferences
-      LatLng? fromPrefs = await _tryLoadFromPrefs();
-      if (fromPrefs != null) return fromPrefs;
-
       // 4. Obtém posição atual com precisão baixa (mais rápido) e timeout
-      // Compatibilidade com versões que não usam locationSettings nomeado no getCurrentPosition
       Position current = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.low,
-        timeLimit: const Duration(seconds: 5),
+        timeLimit: const Duration(seconds: 4),
       );
-      return await _saveAndReturn(LatLng(current.latitude, current.longitude));
+      return await _saveAndReturn(LatLng(current.latitude, current.longitude)) ?? const LatLng(-23.5505, -46.6333);
     } catch (e) {
-      // Retorna o que houver no prefs em caso de erro/timeout
-      return await _tryLoadFromPrefs();
+      // Fallback padrão seguro (São Paulo) em caso de erro/timeout
+      return const LatLng(-23.5505, -46.6333);
     }
   }
 
