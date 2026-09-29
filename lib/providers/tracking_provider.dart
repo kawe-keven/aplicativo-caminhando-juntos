@@ -103,7 +103,7 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
             mapPath.add(latLng);
           } else {
             final last = mapPath.last;
-            if (Geolocator.distanceBetween(last.latitude, last.longitude, latLng.latitude, latLng.longitude) > 10) {
+            if (Geolocator.distanceBetween(last.latitude, last.longitude, latLng.latitude, latLng.longitude) > 15) {
               mapPath.add(latLng);
             }
           }
@@ -216,7 +216,7 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
   }
 
   void _handleNewPosition(Position position) {
-    final bool isSuspect = position.accuracy > 20;
+    final bool isSuspect = position.accuracy > 15;
     final now = DateTime.now();
 
     final newCoordinate = CoordinateModel(
@@ -248,7 +248,23 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
         updatedMapPath = [newPoint];
       } else {
         final lastPoint = state.mapPath.last;
-        if (Geolocator.distanceBetween(lastPoint.latitude, lastPoint.longitude, newPoint.latitude, newPoint.longitude) > 10) {
+        final distance = Geolocator.distanceBetween(
+          lastPoint.latitude,
+          lastPoint.longitude,
+          newPoint.latitude,
+          newPoint.longitude,
+        );
+
+        // Filtro aprimorado anti-jitter para usuário parado (evita calcular distância/passos falsos como 27m):
+        // 1. Distância > 15 metros é aceita como movimento.
+        // 2. Distância entre 10 e 15 metros exige velocidade do GPS >= 0.5 m/s (movimento real).
+        // 3. Velocidade < 0.5 m/s (usuário parado) com saltos menores que 15m é descartada (ruído/drift de GPS).
+        bool isMoving = distance > 15;
+        if (distance > 10 && position.speed >= 0.5) {
+          isMoving = true;
+        }
+
+        if (isMoving) {
           updatedMapPath = [...state.mapPath, newPoint];
         }
       }

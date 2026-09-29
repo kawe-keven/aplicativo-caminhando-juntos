@@ -26,7 +26,7 @@ class WalkingScreen extends ConsumerStatefulWidget {
 class _WalkingScreenState extends ConsumerState<WalkingScreen> {
   final MapController _mapController = MapController();
   ProviderSubscription? _trackingSubscription;
-  LatLng? _initialMapCenter;
+  LatLng? _initialMapCenter = const LatLng(-23.5505, -46.6333); // Default imediato para o mapa carregar sem travamentos
   bool _isMovingToPosition = false;
   bool _isFollowingUser = true;
   
@@ -50,7 +50,11 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
     if (isRunning) {
       final currentPos = ref.read(trackingProvider).currentPosition;
       if (currentPos != null) {
-        _initialMapCenter = currentPos;
+        if (mounted) {
+          setState(() {
+            _initialMapCenter = currentPos;
+          });
+        }
       }
     } else {
       final pos = await ref.read(initialLocationServiceProvider).obterPosicaoInicial();
@@ -59,17 +63,11 @@ class _WalkingScreenState extends ConsumerState<WalkingScreen> {
           _initialMapCenter = pos;
         });
         ref.read(trackingProvider.notifier).startTracking();
+        try {
+          _mapController.move(pos, 17);
+        } catch (_) {}
       }
     }
-
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted && _initialMapCenter == null) {
-        setState(() {
-          _initialMapCenter = const LatLng(-14.2350, -51.9253); 
-        });
-        ref.read(trackingProvider.notifier).startTracking();
-      }
-    });
   }
 
   @override

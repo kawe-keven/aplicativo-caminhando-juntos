@@ -172,18 +172,6 @@ class _LocalTileImageProvider extends ImageProvider<_LocalTileImageProvider> {
       return await _emptyTile(decode);
     }
 
-    // 3. Verificar Conectividade
-    try {
-      final connectivity = await Connectivity().checkConnectivity();
-      if (connectivity.contains(ConnectivityResult.none)) {
-        LocalTileProvider.logDiagnostic('[$provedor] NO NETWORK, fallback to cache');
-        if (cachedData != null && _isValidImage(cachedData)) {
-          return await decode(await ui.ImmutableBuffer.fromUint8List(cachedData));
-        }
-        return await _emptyTile(decode);
-      }
-    } catch (_) {}
-
     final stopwatch = Stopwatch()..start();
 
     try {
@@ -245,6 +233,29 @@ class _LocalTileImageProvider extends ImageProvider<_LocalTileImageProvider> {
       stopwatch.stop();
       cb.recordFailure();
       LocalTileProvider.logDiagnostic('[$provedor] EXCEPTION z=$z x=$x y=$y: $e (failures=${cb.consecutiveFailures})');
+    }
+
+    // Se falhou no Mapbox (auth error, not found, transient error ou exception), tenta fallback automático para OSM
+    if (provedor == 'mapbox') {
+      AppTileLayer.forceNetworkFallback();
+      try {
+        LocalTileProvider.logDiagnostic('[mapbox->osm] Tentando fallback para OpenStreetMap z=$z x=$x y=$y');
+        final osmUrl = 'https://tile.openstreetmap.org/$z/$x/$y.png';
+        final osmUri = Uri.parse(osmUrl);
+        final osmRequest = await LocalTileProvider._httpClient.getUrl(osmUri);
+        osmRequest.headers.set(HttpHeaders.userAgentHeader, 'caminhandojuntos (contato@caminhandojuntos.com)');
+        final osmResponse = await osmRequest.close().timeout(const Duration(seconds: 5));
+        if (osmResponse.statusCode == 200) {
+          final osmBytes = await consolidateHttpClientResponseBytes(osmResponse);
+          if (_isValidImage(osmBytes)) {
+            LocalTileProvider.logDiagnostic('[mapbox->osm] FALLBACK SUCCESS z=$z x=$x y=$y');
+            await cache.putTile('osm', 'osm', z, x, y, osmBytes);
+            return await decode(await ui.ImmutableBuffer.fromUint8List(osmBytes));
+          }
+        }
+      } catch (osmEx) {
+        LocalTileProvider.logDiagnostic('[mapbox->osm] FALLBACK EXCEPTION z=$z x=$x y=$y: $osmEx');
+      }
     }
 
     if (cachedData != null && _isValidImage(cachedData)) {

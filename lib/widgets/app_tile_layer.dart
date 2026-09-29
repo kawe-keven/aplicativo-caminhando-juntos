@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 class AppTileLayer {
   static const bool kUsarCacheMapa = true;
-  static bool _fallbackForced = false;
+  static bool _fallbackForced = true;
 
   /// Força o uso imediato do OpenStreetMap se o cache ou Mapbox falharem criticamente.
   static void forceNetworkFallback() {

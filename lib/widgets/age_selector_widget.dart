@@ -41,8 +41,13 @@ class _AgeSelectorWidgetState extends State<AgeSelectorWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final isSmallScreen = screenSize.width < 360;
+    final buttonSize = isSmallScreen ? 52.0 : 64.0;
+    final iconSize = isSmallScreen ? 32.0 : 40.0;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isSmallScreen ? 14 : 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -61,12 +66,15 @@ class _AgeSelectorWidgetState extends State<AgeSelectorWidget> {
             children: [
               const Icon(Icons.cake, color: AppTheme.primaryColor, size: 24),
               const SizedBox(width: 8),
-              Text(
-                "Sua Idade",
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+              Expanded(
+                child: Text(
+                  "Sua Idade",
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -91,12 +99,14 @@ class _AgeSelectorWidgetState extends State<AgeSelectorWidget> {
                   icon: Icons.remove,
                   onPressed: () => widget.onAgeChanged(widget.age - 1),
                   label: "Diminuir idade",
+                  size: buttonSize,
+                  iconSize: iconSize,
                 ),
                 Expanded(
                   child: Column(
                     children: [
                       SizedBox(
-                        width: 100,
+                        width: isSmallScreen ? 80 : 100,
                         child: TextField(
                           controller: _ageController,
                           keyboardType: TextInputType.number,
@@ -104,7 +114,7 @@ class _AgeSelectorWidgetState extends State<AgeSelectorWidget> {
                           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                                 color: AppTheme.primaryColor,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 32,
+                                fontSize: isSmallScreen ? 26 : 32,
                               ),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
@@ -125,6 +135,8 @@ class _AgeSelectorWidgetState extends State<AgeSelectorWidget> {
                       ),
                       Text(
                         "anos de vitalidade",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
                               color: AppTheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
@@ -137,6 +149,8 @@ class _AgeSelectorWidgetState extends State<AgeSelectorWidget> {
                   icon: Icons.add,
                   onPressed: () => widget.onAgeChanged(widget.age + 1),
                   label: "Aumentar idade",
+                  size: buttonSize,
+                  iconSize: iconSize,
                 ),
               ],
             ),
@@ -151,18 +165,22 @@ class _AgeButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
   final String label;
+  final double size;
+  final double iconSize;
 
   const _AgeButton({
     required this.icon,
     required this.onPressed,
     required this.label,
+    this.size = 64,
+    this.iconSize = 40,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 64,
-      height: 64,
+      width: size,
+      height: size,
       child: Material(
         color: AppTheme.secondaryContainer,
         borderRadius: BorderRadius.circular(12),
@@ -171,7 +189,7 @@ class _AgeButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: Icon(
             icon,
-            size: 40,
+            size: iconSize,
             color: AppTheme.secondaryColor,
           ),
         ),
