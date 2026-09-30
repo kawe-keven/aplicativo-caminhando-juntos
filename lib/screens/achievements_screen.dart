@@ -36,7 +36,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
 
         await Share.shareXFiles(
           [XFile(imagePath.path)],
-          text: 'Olha só as medalhas que conquistei no CaminhaJuntos! 🏆🚶‍♂️',
+          text: 'Olha só as medalhas que conquistei no CaminhaJuntos!',
         );
       }
     } catch (e) {
@@ -79,7 +79,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Minhas Conquistas 🏆", 
+                            "Minhas Conquistas", 
                             style: TextStyle(
                               fontSize: 24, 
                               fontWeight: FontWeight.bold, 
