@@ -1,115 +1,54 @@
-name: Gemini AI QA Auditor
-
-on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
-
-jobs:
-  audit:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
-      pull-requests: write
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Necessário para comparar o histórico e gerar o diff
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
       - name: Install Dependencies
-        run: |
-          pip install google-generativeai PyGithub
+        run: pip install google-genai PyGithub
 
       - name: Run Gemini QA Audit
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_MODEL: gemini-3.6-flash
         run: |
-          python - <<EOF
-          import os
-          import subprocess
-          import json
-          import google.generativeai as genai
+          python - <<'EOF'
+          import os, sys, subprocess, json
+          from google import genai
           from github import Github
 
           def get_git_diff():
-              try:
-                  # Lógica para Pull Request
-                  if os.environ.get('GITHUB_EVENT_NAME') == 'pull_request':
-                      base_ref = os.environ.get('GITHUB_BASE_REF')
-                      return subprocess.check_output(
-                          ['git', 'diff', f'origin/{base_ref}...HEAD', '--', '*.dart', '*.java', '*.xml', '*.gradle'],
-                          stderr=subprocess.STDOUT
-                      ).decode('utf-8')
-                  
-                  # Lógica para Push (compara com o commit anterior)
-                  return subprocess.check_output(
-                      ['git', 'diff', 'HEAD~1', 'HEAD', '--', '*.dart', '*.java', '*.xml', '*.gradle'],
-                      stderr=subprocess.STDOUT
-                  ).decode('utf-8')
-              except Exception as e:
-                  print(f"Erro ao capturar diff: {e}")
-                  return ""
+              if os.environ.get('GITHUB_EVENT_NAME') == 'pull_request':
+                  cmd = ['git', 'diff', f"origin/{os.environ['GITHUB_BASE_REF']}...HEAD"]
+              else:
+                  cmd = ['git', 'diff', 'HEAD~1', 'HEAD']
+              cmd += ['--', '*.dart', '*.java', '*.xml', '*.gradle']
+              return subprocess.check_output(cmd).decode('utf-8')
 
-          # Configurações
-          genai.configure(api_key=os.environ['GEMINI_API_KEY'])
-          gh = Github(os.environ['GITHUB_TOKEN'])
-          repo = gh.get_repo(os.environ['GITHUB_REPOSITORY'])
-
-          diff = get_git_diff()
-
+          diff = get_git_diff()[:100000]
           if not diff:
-              print("Nenhuma alteração relevante encontrada ou falha no diff.")
-              exit(0)
+              print("Nenhuma alteração relevante.")
+              sys.exit(0)
 
-          # Configura o modelo (Usando 1.5-flash para performance em CI)
-          model = genai.GenerativeModel('gemini-1.5-flash')
-          
-          prompt = f"""
-          Você é um Engenheiro de Software Sênior e Especialista em QA.
-          Analise o 'git diff' abaixo do projeto 'Caminhando Juntos'.
-          O foco é encontrar bugs críticos, falhas de segurança e problemas de performance.
-          
-          Regras:
-          1. Se encontrar algo crítico, responda APENAS com um objeto JSON.
-          2. Se o código estiver bom, responda APENAS 'LIMPO'.
-          
-          Formato do JSON:
-          {{
-            "title": "Breve resumo do erro",
-            "body": "Descrição técnica detalhada e sugestão de correção"
-          }}
+          client = genai.Client(api_key=os.environ['GEMINI_API_KEY'])
+          repo = Github(os.environ['GITHUB_TOKEN']).get_repo(os.environ['GITHUB_REPOSITORY'])
+
+          prompt = f"""Você é Engenheiro de Software Sênior e especialista em QA.
+          Analise o git diff do projeto 'Caminhando Juntos' e procure bugs críticos,
+          falhas de segurança e problemas de performance.
+          Se achar algo crítico, responda APENAS com JSON: {{"title": "...", "body": "..."}}
+          Se estiver bom, responda APENAS 'LIMPO'.
 
           DIFF:
-          {diff}
-          """
+          {diff}"""
 
           try:
-              response = model.generate_content(prompt)
-              result = response.text.strip()
-
-              if "LIMPO" not in result.upper():
-                  # Limpeza de possíveis blocos de código Markdown
-                  json_str = result.replace('```json', '').replace('```', '').strip()
-                  issue_data = json.loads(json_str)
-                  
-                  repo.create_issue(
-                      title=f"[QA-AUTO] {issue_data['title']}",
-                      body=f"Este bug foi detectado automaticamente pela IA:\n\n{issue_data['body']}",
-                      labels=['bug', 'qa-auto']
-                  )
-                  print("Issue criada com sucesso!")
+              result = client.models.generate_content(
+                  model=os.environ['GEMINI_MODEL'], contents=prompt
+              ).text.strip()
+              if result.upper() != "LIMPO":
+                  data = json.loads(result.replace('`' * 3 + 'json', '').replace('`' * 3, '').strip())
+                  repo.create_issue(title=f"[QA-AUTO] {data['title']}",
+                                    body=data['body'], labels=['bug', 'qa-auto'])
+                  print("Issue criada.")
               else:
-                  print("Auditoria concluída: Código aprovado.")
+                  print("Código aprovado.")
           except Exception as e:
-              print(f"Erro no processamento da IA ou GitHub: {e}")
+              print(f"ERRO: {e}")
+              sys.exit(1)   # agora o job falha de verdade em vez de fingir sucesso
           EOF
