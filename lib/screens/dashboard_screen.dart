@@ -36,20 +36,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     final hour = DateTime.now().hour;
     final String greeting;
-    final String emoji;
     final IconData weatherIcon;
 
     if (hour >= 5 && hour < 12) {
       greeting = "Bom dia";
-      emoji = "☀️";
       weatherIcon = Icons.sunny;
     } else if (hour >= 12 && hour < 18) {
       greeting = "Boa tarde";
-      emoji = "🌤️";
       weatherIcon = Icons.wb_sunny;
     } else {
       greeting = "Boa noite";
-      emoji = "🌙";
       weatherIcon = Icons.nights_stay;
     }
 
@@ -77,7 +73,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       sliver: SliverList(
                         delegate: SliverChildListDelegate([
                           Text(
-                            "$greeting, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! $emoji",
+                            "$greeting, ${user.name.isEmpty ? 'Seu Antônio' : user.name}!",
                             key: const ValueKey('welcome_text'),
                             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                               color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.primary,
@@ -236,12 +232,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           GestureDetector(
             onTap: () => context.go('/profile'),
-            child: ClipOval(
-              child: Image.asset(
-                "assets/images/logo_launcher.png",
-                width: 32,
-                height: 32,
-                fit: BoxFit.cover,
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: isHighContrast ? Colors.white : AppTheme.primaryContainer,
+              child: Icon(
+                Icons.person,
+                color: isHighContrast ? Colors.black : AppTheme.primaryColor,
+                size: 20,
               ),
             ),
           ),
@@ -485,16 +482,15 @@ class _GroupWalkingCard extends ConsumerWidget {
             children: [
               const Expanded(
                 child: Text(
-                  "Caminhada em Grupo Hoje",
+                  "Caminhadas em Grupo",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
               Text(
-                "16:30",
+                "Em breve",
                 style: TextStyle(
-                  fontSize: 18, 
+                  fontSize: 16, 
                   fontWeight: FontWeight.bold, 
                   color: isHighContrast ? Colors.white : AppTheme.primaryColor,
                 ),
@@ -502,55 +498,23 @@ class _GroupWalkingCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Stack(
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isHighContrast ? Colors.black : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
               children: [
-                Image.asset(
-                  "assets/images/logo_launcher.png",
-                  height: 160,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-                Container(
-                  height: 160,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter, 
-                      end: Alignment.topCenter, 
-                      colors: [
-                        isHighContrast ? Colors.black.withValues(alpha: 0.9) : Colors.black.withValues(alpha: 0.7), 
-                        Colors.transparent,
-                      ],
+                Icon(Icons.group, color: Theme.of(context).colorScheme.primary, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Conecte-se ao servidor para visualizar caminhadas em grupo agendadas na sua região.",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isHighContrast ? Colors.white70 : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 12,
-                  left: 12,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Praça das Flores • Turma das 16h30", 
-                        style: TextStyle(
-                          color: Colors.white, 
-                          fontWeight: FontWeight.bold, 
-                          fontSize: 18,
-                          backgroundColor: isHighContrast ? Colors.black : Colors.transparent,
-                        ),
-                      ),
-                      Text(
-                        "7 vizinhos já confirmaram presença!", 
-                        style: TextStyle(
-                          color: isHighContrast ? Colors.white70 : Colors.white70, 
-                          fontSize: 16,
-                          fontWeight: isHighContrast ? FontWeight.bold : FontWeight.normal,
-                          backgroundColor: isHighContrast ? Colors.black : Colors.transparent,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],

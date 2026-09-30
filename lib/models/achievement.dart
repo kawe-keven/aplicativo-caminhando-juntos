@@ -16,7 +16,7 @@ class Achievement {
     required this.id,
     required this.title,
     required this.description,
-    required this.icon,
+    this.icon = Icons.emoji_events,
     this.isUnlocked = false,
     this.dateUnlocked,
     this.progress = 0.0,
@@ -24,4 +24,27 @@ class Achievement {
     this.iconBackgroundColor,
     this.iconColor,
   });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'isUnlocked': isUnlocked,
+        'dateUnlocked': dateUnlocked,
+        'progress': progress,
+        'progressText': progressText,
+      };
+
+  factory Achievement.fromJson(Map<String, dynamic> json) {
+    return Achievement(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      icon: Icons.emoji_events,
+      isUnlocked: json['isUnlocked'] as bool? ?? false,
+      dateUnlocked: json['dateUnlocked'] as String?,
+      progress: (json['progress'] as num?)?.toDouble() ?? 0.0,
+      progressText: json['progressText'] as String?,
+    );
+  }
 }

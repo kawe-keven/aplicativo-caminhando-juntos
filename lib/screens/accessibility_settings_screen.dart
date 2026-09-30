@@ -91,7 +91,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              "Configurações de Acessibilidade ⚙️",
+              "Configurações de Acessibilidade",
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                 color: isHighContrast ? Colors.white : Theme.of(context).colorScheme.primary, 
                 fontWeight: FontWeight.bold,
@@ -243,21 +243,21 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
               isHighContrast: isHighContrast,
               children: [
                 _ToggleItem(
-                  label: "Ativar Leitura de Telas por Voz 🔊",
+                  label: "Ativar Leitura de Telas por Voz",
                   subtitle: "Lê em voz alta as instruções ao tocar em qualquer texto.",
                   value: state.voiceReadingEnabled,
                   onChanged: notifier.toggleVoiceReading,
                 ),
                 const Divider(height: 32),
                 _ToggleItem(
-                  label: "Avisos Sonoros a cada 1 km 🔔",
+                  label: "Avisos Sonoros a cada 1 km",
                   subtitle: "Toque musical alegre que incentiva o seu progresso.",
                   value: state.soundAlertsEnabled,
                   onChanged: notifier.toggleSoundAlerts,
                 ),
                 const Divider(height: 32),
                 _ToggleItem(
-                  label: "Vibração da Meta 📳",
+                  label: "Vibração da Meta",
                   subtitle: "O celular vibra suavemente quando você alcança o objetivo.",
                   value: state.metaVibrationEnabled,
                   onChanged: notifier.toggleMetaVibration,
@@ -275,7 +275,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
               isHighContrast: isHighContrast,
               children: [
                 _ToggleItem(
-                  label: "Cores com Contraste Máximo 👁️",
+                  label: "Cores com Contraste Máximo",
                   subtitle: "Fortalece a separação das cores para enxergar melhor no sol.",
                   value: state.highContrastEnabled,
                   onChanged: notifier.toggleHighContrast,
@@ -331,7 +331,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                 context.pop();
               },
               icon: const Icon(Icons.check_circle, size: 28),
-              label: const Text("Salvar Preferências ✓"),
+              label: const Text("Salvar Preferências"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,

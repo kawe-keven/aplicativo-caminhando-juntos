@@ -359,62 +359,59 @@ class TrackingNotifier extends StateNotifier<TrackingState> with WidgetsBindingO
     // 1. Calcula a distância real da caminhada em metros e km
     final totalMeters = state.totalDistanceMeters;
     final distanceKm = totalMeters / 1000.0;
-
-    // 2. Calcula as moedas de recompensa (10 moedas/km, mínimo de 1 moeda se andou > 50m)
-    int coins = (distanceKm * 10).round();
-    if (coins == 0 && totalMeters > 50) {
-      coins = 1;
-    }
-
     final durationMinutes = state.duration.inMinutes;
+
+    int coins = 0; // Contagem de moedas autoritativa calculada pelo servidor backend
 
     if (id != null) {
       await _flushBuffer();
       await _finalizeLocal(id, now);
     }
 
-    // 3. Atualiza estado com a distância e moedas validadas para visualização imediata no resumo
+    // 2. Atualiza estado para sincronizando enquanto aguarda validação do servidor
     state = state.copyWith(
       status: TrackingStatus.syncing,
       validatedDistanceKm: distanceKm,
-      validatedCoins: coins,
+      validatedCoins: 0,
     );
     _ref.read(accessibilityProvider.notifier).notify();
 
-    // 4. Atualiza o progresso do usuário no dashboard via Provider Ref interno
+    // 3. Envia para o servidor backend para validação oficial e cálculo de moedas
     try {
+      final payload = {
+        if (id != null) 'id': id,
+        'coordinates': state.rawPath.map((c) => c.toJson()).toList(),
+        'totalDurationSeconds': state.duration.inSeconds,
+      };
+
+      final serverResponse = await _apiClient.syncCaminhada(payload).timeout(const Duration(seconds: 5));
+      coins = serverResponse['coinsEarned'] ?? serverResponse['validated_coins'] ?? 0;
+      final serverDistance = (serverResponse['distanceKm'] ?? serverResponse['validated_distance_km'] as num?)?.toDouble() ?? distanceKm;
+
+      state = state.copyWith(
+        status: TrackingStatus.finished,
+        validatedDistanceKm: serverDistance,
+        validatedCoins: coins,
+      );
+
+      // Credita moedas e progresso validados pelo servidor no dashboard
       _ref.read(dashboardProvider.notifier).addCompletedWalk(
-        distanceKm: distanceKm,
+        distanceKm: serverDistance,
         coins: coins,
         durationMinutes: durationMinutes,
       );
     } catch (e) {
-      AppLogger.e('Erro ao atualizar dashboardProvider', e);
-    }
-
-    // 5. Executa sincronização de forma não-bloqueante / resiliente (timeout de 3s para não travar a UI)
-    try {
-      await _syncService.triggerSync().timeout(const Duration(seconds: 3));
-      if (id != null) {
-        final check = await _caminhadaDao.getById(id);
-        if (check == null || check['status'] == 'sincronizada') {
-          state = state.copyWith(status: TrackingStatus.finished);
-        } else {
-          state = state.copyWith(status: TrackingStatus.finished, errorMessage: "offline_sync_pending");
-        }
-      } else {
-        try {
-          final payload = {
-            'coordinates': state.rawPath.map((c) => c.toJson()).toList(),
-            'totalDurationSeconds': state.duration.inSeconds,
-          };
-          await _apiClient.syncCaminhada(payload);
-        } catch (_) {}
-        state = state.copyWith(status: TrackingStatus.finished);
-      }
-    } catch (e) {
-      AppLogger.e('Sincronização em background pendente (modo offline)', e);
-      state = state.copyWith(status: TrackingStatus.finished, errorMessage: "offline_sync_pending");
+      AppLogger.e('Sincronização com servidor falhou ou pendente (modo offline)', e);
+      // Modo offline: moedas pendentes de validação no servidor
+      state = state.copyWith(
+        status: TrackingStatus.finished,
+        validatedCoins: 0,
+        errorMessage: "offline_sync_pending",
+      );
+      // Dispara worker em background para sincronizar quando houver conexão
+      try {
+        await _syncService.triggerSync();
+      } catch (_) {}
     }
   }
 

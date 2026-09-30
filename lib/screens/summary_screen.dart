@@ -70,7 +70,7 @@ class SummaryScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "Tudo certo, ${user.name.isEmpty ? 'Seu Antônio' : user.name}! 🎊",
+                      "Tudo certo, ${user.name.isEmpty ? 'Seu Antônio' : user.name}!",
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: Theme.of(context).colorScheme.primary, 
@@ -181,7 +181,7 @@ class SummaryScreen extends ConsumerWidget {
 
                 // CTAs
                 BotaoGrandeWidget(
-                  text: "Ver meus prêmios 🎁",
+                  text: "Ver meus prêmios",
                   onPressed: () => context.push('/store'),
                 ),
                 const SizedBox(height: 16),

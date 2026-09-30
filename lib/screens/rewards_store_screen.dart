@@ -9,14 +9,26 @@ import 'package:caminhandojuntos/widgets/speakable_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class RewardsStoreScreen extends ConsumerWidget {
+class RewardsStoreScreen extends ConsumerStatefulWidget {
   const RewardsStoreScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RewardsStoreScreen> createState() => _RewardsStoreScreenState();
+}
+
+class _RewardsStoreScreenState extends ConsumerState<RewardsStoreScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(storeProvider.notifier).fetchRewards();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final DashboardState dashboardState = ref.watch(dashboardProvider);
-    final filter = ref.watch(storeFilterProvider);
-    final rewards = ref.watch(filteredRewardsProvider);
+    final rewards = ref.watch(storeProvider);
 
     return Material(
       color: Theme.of(context).colorScheme.surface,
@@ -33,8 +45,6 @@ class RewardsStoreScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(20),
                 children: [
                   _BalanceCard(coins: dashboardState.progress.coins),
-                  const SizedBox(height: 24),
-                  _FilterSection(filter: filter, ref: ref),
                   const SizedBox(height: 24),
                   GridView.builder(
                     shrinkWrap: true,
@@ -192,68 +202,6 @@ class _BalanceCard extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _FilterSection extends ConsumerWidget {
-  final RewardCategory filter;
-  final WidgetRef ref;
-  const _FilterSection({required this.filter, required this.ref});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isHighContrast ? Colors.black : AppTheme.surfaceContainerHigh, 
-        borderRadius: BorderRadius.circular(16),
-        border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
-      ),
-      child: Row(
-        children: [
-          _FilterTab(label: "Todos", isSelected: filter == RewardCategory.all, onTap: () => ref.read(storeFilterProvider.notifier).state = RewardCategory.all),
-          _FilterTab(label: "Populares", isSelected: filter == RewardCategory.popular, onTap: () => ref.read(storeFilterProvider.notifier).state = RewardCategory.popular),
-          _FilterTab(label: "Vales", isSelected: filter == RewardCategory.vouchers, onTap: () => ref.read(storeFilterProvider.notifier).state = RewardCategory.vouchers),
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterTab extends ConsumerWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  const _FilterTab({required this.label, required this.isSelected, required this.onTap});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
-
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          height: 52,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected 
-                ? (isHighContrast ? Colors.white : AppTheme.primaryContainer) 
-                : null,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            label, 
-            style: TextStyle(
-              fontSize: 16, 
-              fontWeight: FontWeight.bold, 
-              color: isSelected ? (isHighContrast ? Colors.black : Colors.white) : (isHighContrast ? Colors.white : AppTheme.onSurfaceVariant),
-            ),
-          ),
-        ),
       ),
     );
   }
