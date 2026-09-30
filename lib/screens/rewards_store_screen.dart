@@ -119,13 +119,6 @@ class RewardsStoreScreen extends ConsumerWidget {
   }
 
   void _showRedeemDialog(BuildContext context, WidgetRef ref, Reward reward, DashboardState dashboardState) {
-    if (dashboardState.progress.coins < reward.cost) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Saldo insuficiente para resgatar este prêmio.")),
-      );
-      return;
-    }
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

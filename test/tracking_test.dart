@@ -20,8 +20,8 @@ void main() {
 
     test('DashboardNotifier adiciona caminhada concluida corretamente', () {
       final notifier = DashboardNotifier();
-      expect(notifier.state.progress.coins, equals(340));
-      expect(notifier.state.progress.distanceKm, equals(2.4));
+      expect(notifier.state.progress.coins, equals(0));
+      expect(notifier.state.progress.distanceKm, equals(0.0));
 
       notifier.addCompletedWalk(
         distanceKm: 1.5,
@@ -29,9 +29,9 @@ void main() {
         durationMinutes: 20,
       );
 
-      expect(notifier.state.progress.coins, equals(355));
-      expect(notifier.state.progress.distanceKm, equals(3.9));
-      expect(notifier.state.progress.durationMinutes, equals(55));
+      expect(notifier.state.progress.coins, equals(15));
+      expect(notifier.state.progress.distanceKm, equals(1.5));
+      expect(notifier.state.progress.durationMinutes, equals(20));
     });
   });
 }
