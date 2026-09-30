@@ -100,40 +100,40 @@ class RewardCardWidget extends ConsumerWidget {
   }
 
   Widget _buildRewardImage(BuildContext context, bool isHighContrast) {
-    // Mapeamento de Cores e Ícones específicos de alta nitidez para cada prêmio (Essencial para acessibilidade do Idoso)
     Color startColor;
     Color endColor;
     IconData icon;
+    String badgeText = reward.tag ?? '';
 
     switch (reward.title.toLowerCase()) {
       case 'candy crush':
-        startColor = Colors.pink;
-        endColor = Colors.purple;
-        icon = Icons.cake; // Cake como substituto visual para doces
+        startColor = const Color(0xFFFF2E93);
+        endColor = const Color(0xFF7B1FA2);
+        icon = Icons.cake;
         break;
       case 'palavras cruzadas':
-        startColor = Colors.blue;
-        endColor = Colors.teal;
+        startColor = const Color(0xFF00B0FF);
+        endColor = const Color(0xFF00695C);
         icon = Icons.grid_on;
         break;
       case 'buraco & tranca':
-        startColor = Colors.orange;
-        endColor = Colors.deepOrange;
-        icon = Icons.style; // Cartas de baralho
+        startColor = const Color(0xFFFF6D00);
+        endColor = const Color(0xFFBF360C);
+        icon = Icons.style;
         break;
       case 'caça-palavras':
-        startColor = Colors.green;
-        endColor = Colors.lightGreen;
+        startColor = const Color(0xFF00E676);
+        endColor = const Color(0xFF1B5E20);
         icon = Icons.search;
         break;
       case 'dominó online':
-        startColor = Colors.indigo;
-        endColor = Colors.blueAccent;
+        startColor = const Color(0xFF3F51B5);
+        endColor = const Color(0xFF0D47A1);
         icon = Icons.view_module;
         break;
       case 'farm heroes':
-        startColor = Colors.amber;
-        endColor = Colors.orangeAccent;
+        startColor = const Color(0xFFFFAB00);
+        endColor = const Color(0xFFE65100);
         icon = Icons.eco;
         break;
       default:
@@ -150,14 +150,73 @@ class RewardCardWidget extends ConsumerWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: isHighContrast ? const Border(bottom: BorderSide(color: Colors.white, width: 2)) : null,
+        boxShadow: [
+          BoxShadow(
+            color: startColor.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Center(
-        child: Icon(
-          icon,
-          size: 54,
-          color: Colors.white,
-        ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            right: -20,
+            bottom: -20,
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.1),
+              ),
+            ),
+          ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 40,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          if (badgeText.isNotEmpty)
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    color: startColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
