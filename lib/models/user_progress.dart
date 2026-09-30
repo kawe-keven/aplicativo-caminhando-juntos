@@ -5,6 +5,7 @@ class UserProgress {
   final double distanceKm;
   final int durationMinutes;
   final int calories;
+  final String? lastDate;
 
   UserProgress({
     this.steps = 0,
@@ -13,6 +14,7 @@ class UserProgress {
     this.distanceKm = 0.0,
     this.durationMinutes = 0,
     this.calories = 0,
+    this.lastDate,
   });
 
   double get progressPercentage => (steps / goalSteps).clamp(0.0, 1.0);
@@ -25,6 +27,7 @@ class UserProgress {
         'distanceKm': distanceKm,
         'durationMinutes': durationMinutes,
         'calories': calories,
+        'lastDate': lastDate,
       };
 
   factory UserProgress.fromJson(Map<String, dynamic> json) {
@@ -35,6 +38,7 @@ class UserProgress {
       distanceKm: (json['distanceKm'] as num?)?.toDouble() ?? 0.0,
       durationMinutes: json['durationMinutes'] as int? ?? 0,
       calories: json['calories'] as int? ?? 0,
+      lastDate: json['lastDate'] as String?,
     );
   }
 
@@ -45,6 +49,7 @@ class UserProgress {
     double? distanceKm,
     int? durationMinutes,
     int? calories,
+    String? lastDate,
   }) {
     return UserProgress(
       steps: steps ?? this.steps,
@@ -53,6 +58,7 @@ class UserProgress {
       distanceKm: distanceKm ?? this.distanceKm,
       durationMinutes: durationMinutes ?? this.durationMinutes,
       calories: calories ?? this.calories,
+      lastDate: lastDate ?? this.lastDate,
     );
   }
 }
