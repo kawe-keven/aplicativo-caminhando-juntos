@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:caminhandojuntos/models/user_progress.dart';
 import 'package:caminhandojuntos/services/logger_service.dart';
 import 'package:caminhandojuntos/services/rewards_api_client.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,11 +34,50 @@ final dashboardProvider = StateNotifierProvider<DashboardNotifier, DashboardStat
   return DashboardNotifier();
 });
 
-class DashboardNotifier extends StateNotifier<DashboardState> {
+class DashboardNotifier extends StateNotifier<DashboardState> with WidgetsBindingObserver {
   DashboardNotifier() : super(DashboardState(
     progress: UserProgress(),
   )) {
+    try {
+      WidgetsBinding.instance.addObserver(this);
+    } catch (_) {}
     loadProgress();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      checkAndResetForNewDay();
+    }
+  }
+
+  @override
+  void dispose() {
+    try {
+      WidgetsBinding.instance.removeObserver(this);
+    } catch (_) {}
+    super.dispose();
+  }
+
+  String _getTodayString() {
+    final now = DateTime.now();
+    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+  }
+
+  void checkAndResetForNewDay() {
+    final today = _getTodayString();
+    final current = state.progress;
+    if (current.lastDate != today) {
+      final newProgress = current.copyWith(
+        steps: 0,
+        distanceKm: 0.0,
+        durationMinutes: 0,
+        calories: 0,
+        lastDate: today,
+      );
+      state = state.copyWith(progress: newProgress);
+      _saveProgress(newProgress);
+    }
   }
 
   Future<void> loadProgress() async {
@@ -48,8 +88,10 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         final data = json.decode(jsonString) as Map<String, dynamic>;
         state = state.copyWith(progress: UserProgress.fromJson(data));
       }
+      checkAndResetForNewDay();
     } catch (e) {
       AppLogger.e('Erro ao carregar progresso do dashboard', e);
+      checkAndResetForNewDay();
     }
   }
 
@@ -63,6 +105,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   }
 
   void addSteps(int count) {
+    checkAndResetForNewDay();
     final newProgress = state.progress.copyWith(steps: state.progress.steps + count);
     state = state.copyWith(progress: newProgress);
     _saveProgress(newProgress);
@@ -74,6 +117,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     required int durationMinutes,
     int steps = 0,
   }) {
+    checkAndResetForNewDay();
     final current = state.progress;
     final estimatedSteps = steps > 0 ? steps : (distanceKm * 1300).round();
     final estimatedCalories = (distanceKm * 60).round();
@@ -91,6 +135,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   /// Requisito de Segurança (Escopo 6): Proteção contra cliques duplos (Rate Limiting UI)
   /// O servidor Java deve validar o saldo antes de debitar (não confiar no cliente).
   Future<bool> redeemReward(int cost, {String rewardId = 'default_reward'}) async {
+    checkAndResetForNewDay();
     if (state.isRedeeming) return false;
 
     state = state.copyWith(isRedeeming: true, error: null);
@@ -123,6 +168,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   }
 
   void updateProgressFromServer(UserProgress newProgress) {
+    checkAndResetForNewDay();
     state = state.copyWith(progress: newProgress);
     _saveProgress(newProgress);
   }
