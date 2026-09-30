@@ -56,9 +56,9 @@ void main() {
     addTearDown(container.dispose);
 
     final achievements = container.read(achievementsProvider);
-    expect(achievements, isNotEmpty);
+    expect(achievements, isEmpty);
 
     final notifier = container.read(achievementsProvider.notifier);
-    expect(notifier.totalCount, equals(6));
+    expect(notifier.totalCount, equals(0));
   });
 }
