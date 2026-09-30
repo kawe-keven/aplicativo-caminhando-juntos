@@ -1,4 +1,4 @@
-# 🚶‍♂️ Caminhando Juntos (CaminhaJuntos)
+# Caminhando Juntos (CaminhaJuntos)
 
 > **Aplicativo de gamificação de exercícios físicos voltado para idosos, com foco em acessibilidade, rastreamento via GPS e recompensas.**
 
@@ -10,20 +10,20 @@
 
 ---
 
-## 📱 Sobre o Projeto
+## Sobre o Projeto
 
 O **Caminhando Juntos** é um aplicativo mobile desenvolvido para incentivar a prática regular de caminhadas e exercícios físicos na terceira idade (público 60+, com foco no MVP a partir de 50 anos). 
 
 O projeto combate o sedentarismo combinando **design com alta acessibilidade visual e motora** a um **sistema de gamificação**: os passos e distâncias percorridas são convertidos em moedas virtuais, que podem ser trocadas por vantagens e créditos em jogos parceiros (como *Candy Crush*).
 
-### 🌟 Diferenciais & Acessibilidade
+### Diferenciais & Acessibilidade
 * **UI/UX adaptada:** Botões amplos, alto contraste, navegação simplificada e prevenção de cliques acidentais.
 * **Incentivo e Gamificação:** Conquistas, acompanhamento do progresso e loja de recompensas.
 * **Exercícios Guiados:** Atividades complementares adaptadas para a faixa etária.
 
 ---
 
-## 🛠️ Stack Tecnológica
+## Stack Tecnológica
 
 * **Front-end / Mobile:** [Flutter](https://flutter.dev/) (Dart)
 * **Gerenciamento de Estado:** State Management nativo / Reactive patterns
@@ -34,7 +34,7 @@ O projeto combate o sedentarismo combinando **design com alta acessibilidade vis
 
 ---
 
-## 📸 Funcionalidades Integradas (MVP)
+## Funcionalidades Integradas (MVP)
 
 - [x] **Onboarding Acessível:** Fluxo de boas-vindas com validação e máscaras de dados (Nome, Telefone brasileiro, Seletor de Idade).
 - [x] **Dashboard Principal:** Exibição da data local do dispositivo, previsão do tempo atualizada e métricas de passos/moedas.
@@ -46,7 +46,7 @@ O projeto combate o sedentarismo combinando **design com alta acessibilidade vis
 
 ---
 
-## 🚀 Como Executar
+## Como Executar
 
 Para garantir a segurança, o token do Mapbox não está no código. Siga os passos:
 1. Crie um arquivo chamado `mapbox_env.json` na raiz do projeto (use o `lib/config/mapbox_env.json.example` como base).
@@ -57,20 +57,20 @@ Para garantir a segurança, o token do Mapbox não está no código. Siga os pas
    ```
    No **Android Studio**, adicione `--dart-define-from-file=mapbox_env.json` no campo "Additional run args" em *Edit Configurations*.
 
-### 🌐 Configuração do Backend (Opcional)
+### Configuração do Backend (Opcional)
 A URL do backend pode ser customizada no build usando `--dart-define`:
 ```bash
 flutter run --dart-define=BACKEND_URL=https://api.caminhandojuntos.com.br
 ```
 
-### 📊 Crash Reporting (Firebase Crashlytics)
+### Crash Reporting (Firebase Crashlytics)
 O projeto possui suporte integrado a `firebase_crashlytics` via `AppLogger.e`. Para habilitar relatórios de falhas em produção:
 1. Adicione o arquivo `google-services.json` gerado no console do Firebase em `android/app/`.
 2. Certifique-se de que o plugin do Google Services esteja ativo no gradle do Android.
 
 ---
 
-## 🏗️ Arquitetura e Segurança
+## Arquitetura e Segurança
 
 O aplicativo opera em uma estrutura **Client-Server**:
 ```text
