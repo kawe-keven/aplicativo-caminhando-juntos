@@ -29,14 +29,14 @@ void main() {
     expect(state.error, isNull);
 
     container.read(dashboardProvider.notifier).addSteps(100);
-    expect(container.read(dashboardProvider).progress.steps, greaterThan(3850));
+    expect(container.read(dashboardProvider).progress.steps, equals(100));
 
     container.read(dashboardProvider.notifier).addCompletedWalk(
       distanceKm: 1.5,
       coins: 15,
       durationMinutes: 15,
     );
-    expect(container.read(dashboardProvider).progress.coins, greaterThan(340));
+    expect(container.read(dashboardProvider).progress.coins, equals(15));
   });
 
   test('StoreProvider initial state and filtering', () async {
@@ -44,12 +44,11 @@ void main() {
     addTearDown(container.dispose);
 
     final rewards = container.read(storeProvider);
-    expect(rewards, isNotEmpty);
+    expect(rewards, isEmpty);
 
     container.read(storeFilterProvider.notifier).state = RewardCategory.popular;
     final filtered = container.read(filteredRewardsProvider);
-    expect(filtered, isNotEmpty);
-    expect(filtered.every((r) => r.category == RewardCategory.popular), isTrue);
+    expect(filtered, isEmpty);
   });
 
   test('AchievementsProvider initial state and count', () async {

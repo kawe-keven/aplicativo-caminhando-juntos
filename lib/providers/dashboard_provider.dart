@@ -35,14 +35,7 @@ final dashboardProvider = StateNotifierProvider<DashboardNotifier, DashboardStat
 
 class DashboardNotifier extends StateNotifier<DashboardState> {
   DashboardNotifier() : super(DashboardState(
-    progress: UserProgress(
-      steps: 3850,
-      goalSteps: 5000,
-      coins: 340,
-      distanceKm: 2.4,
-      durationMinutes: 35,
-      calories: 180,
-    ),
+    progress: UserProgress(),
   )) {
     loadProgress();
   }
@@ -99,7 +92,6 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   /// O servidor Java deve validar o saldo antes de debitar (não confiar no cliente).
   Future<bool> redeemReward(int cost, {String rewardId = 'default_reward'}) async {
     if (state.isRedeeming) return false;
-    if (state.progress.coins < cost) return false;
 
     state = state.copyWith(isRedeeming: true, error: null);
 
