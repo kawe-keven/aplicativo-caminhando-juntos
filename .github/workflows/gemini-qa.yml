@@ -1,3 +1,30 @@
+name: Gemini AI QA Auditor
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
       - name: Install Dependencies
         run: pip install google-genai PyGithub
 
@@ -42,7 +69,8 @@
                   model=os.environ['GEMINI_MODEL'], contents=prompt
               ).text.strip()
               if result.upper() != "LIMPO":
-                  data = json.loads(result.replace('`' * 3 + 'json', '').replace('`' * 3, '').strip())
+                  fence = '`' * 3
+                  data = json.loads(result.replace(fence + 'json', '').replace(fence, '').strip())
                   repo.create_issue(title=f"[QA-AUTO] {data['title']}",
                                     body=data['body'], labels=['bug', 'qa-auto'])
                   print("Issue criada.")
@@ -50,5 +78,5 @@
                   print("Código aprovado.")
           except Exception as e:
               print(f"ERRO: {e}")
-              sys.exit(1)   # agora o job falha de verdade em vez de fingir sucesso
+              sys.exit(1)
           EOF
