@@ -111,6 +111,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           const SizedBox(height: 24),
                           const _StartWalkingButton(key: ValueKey('start_button')),
                           const SizedBox(height: 24),
+                          const _AiChatCard(key: ValueKey('ai_chat_card')),
+                          const SizedBox(height: 24),
                           const _GroupWalkingCard(key: ValueKey('group_card')),
                           const SizedBox(height: 24),
                           const _EmergencyCard(key: ValueKey('emergency_card')),
@@ -519,6 +521,69 @@ class _GroupWalkingCard extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiChatCard extends ConsumerWidget {
+  const _AiChatCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHighContrast = ref.watch(accessibilityProvider).highContrastEnabled;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+        boxShadow: !isHighContrast 
+            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]
+            : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: AppTheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.smart_toy, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Assistente Virtual IA",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  "Tire dúvidas sobre rotas, caminhadas e orientações.",
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () => context.push('/chat'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(0, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text("Conversar"),
           ),
         ],
       ),
