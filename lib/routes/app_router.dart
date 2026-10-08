@@ -1,5 +1,6 @@
 import 'package:caminhandojuntos/screens/accessibility_settings_screen.dart';
 import 'package:caminhandojuntos/screens/achievements_screen.dart';
+import 'package:caminhandojuntos/screens/chatbot_screen.dart';
 import 'package:caminhandojuntos/screens/dashboard_screen.dart';
 import 'package:caminhandojuntos/screens/permission_screen.dart';
 import 'package:caminhandojuntos/screens/emergency_alert_screen.dart';
@@ -50,6 +51,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/accessibility',
         builder: (context, state) => const AccessibilitySettingsScreen(),
+      ),
+      GoRoute(
+        path: '/chat',
+        builder: (context, state) => const ChatbotScreen(),
       ),
       GoRoute(
         path: '/emergency',
